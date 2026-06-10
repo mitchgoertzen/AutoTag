@@ -1,27 +1,32 @@
-import electronLogo from './assets/electron.svg'
+import { useState } from 'react'
+import Home from './components/Home'
+import Running from './components/Running'
+import { useCallback } from 'react'
 
 function App() {
-  const ipcHandle = () => window.electron.ipcRenderer.send('ping')
+  const [currentScreen, setCurrentScreen] = useState('home')
 
-  return (
-    <>
-      <img alt="logo" className="logo" src={electronLogo} />
-      <div className="creator">Powered by electron-vite</div>
-      <div className="text">
-        Build an Electron app with <span className="react">React</span>
-      </div>
-      <p className="tip">
-        Please try pressing <code>F12</code> to open the devTool
-      </p>
-      <div className="actions">
-        <div className="action">
-          <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
-            Send IPC
-          </a>
-        </div>
-      </div>
-    </>
-  )
+  const renderScreen = useCallback(() => {
+    let screen
+    screen =
+      currentScreen === 'home' ? (
+        <Home
+          onStart={() => {
+            setCurrentScreen('running')
+          }}
+        />
+      ) : (
+        <Running
+          onEnd={() => {
+            setCurrentScreen('home')
+          }}
+        />
+      )
+
+    return screen
+  }, [currentScreen])
+
+  return renderScreen()
 }
 
 export default App

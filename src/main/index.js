@@ -52,7 +52,7 @@ app.whenReady().then(() => {
 
   // IPC test
   ipcMain.on('ping', () => {
-    run()
+    // run()
   })
 
   createWindow()
