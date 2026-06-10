@@ -3,6 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import run from './tags'
+import { dialog } from 'electron'
 
 function createWindow() {
   // Create the browser window.
@@ -50,9 +51,17 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // IPC test
-  ipcMain.on('ping', () => {
-    // run()
+  // ipcMain.on('ping', () => {
+  //   console.log('pong')
+  // })
+
+  ipcMain.on('open', () => {
+    dialog.showOpenDialog({ properties: ['openDirectory'] }).then((response) => {
+      console.log('folder returned:', response)
+      if (!response.canceled) {
+        console.log('start script at:', response.filePaths[0])
+      }
+    })
   })
 
   createWindow()

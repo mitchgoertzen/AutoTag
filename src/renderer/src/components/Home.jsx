@@ -1,11 +1,12 @@
 import Versions from './Versions'
 
 function Home({ onStart }) {
-  const ipcHandle = () => window.electron.ipcRenderer.send('ping')
+  const ipcHandle = () => window.electron.ipcRenderer.send('open')
 
   const handlePress = () => {
     onStart()
   }
+
   return (
     <>
       <div className="text">
@@ -20,7 +21,11 @@ function Home({ onStart }) {
       </div>
 
       <Versions></Versions>
-      <div className="files">file explorer here</div>
+      <div className="files">
+        <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
+          choose album folder
+        </a>
+      </div>
     </>
   )
 }
