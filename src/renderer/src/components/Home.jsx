@@ -1,11 +1,11 @@
-// eslint-disable-next-line react/prop-types
+import Versions from './Versions'
+
 function Home({ onStart }) {
   const ipcHandle = () => window.electron.ipcRenderer.send('ping')
 
   const handlePress = () => {
     onStart()
   }
-
   return (
     <>
       <div className="text">
@@ -19,6 +19,7 @@ function Home({ onStart }) {
         </div>
       </div>
 
+      <Versions></Versions>
       <div className="files">file explorer here</div>
     </>
   )

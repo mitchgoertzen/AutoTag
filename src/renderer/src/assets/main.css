@@ -35,6 +35,16 @@ code {
   margin-bottom: 60px;
 }
 
+.a{
+  
+}
+
+.info-footer{
+text-decoration: none;
+
+color: var(--ev-c-text-1);
+}
+
 .logo {
   margin-bottom: 20px;
   -webkit-user-drag: none;
@@ -148,13 +158,12 @@ margin-top: 20px;
   position: absolute;
   bottom: 30px;
   margin: 0 auto;
-  padding: 15px 0;
+  padding: 5px 0;
   font-family: 'Menlo', 'Lucida Console', monospace;
   display: inline-flex;
   overflow: hidden;
   align-items: center;
-  border-radius: 22px;
-  background-color: #202127;
+  background-color: #1e6e492f;
   backdrop-filter: blur(24px);
 }
 

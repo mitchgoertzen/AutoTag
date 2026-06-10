@@ -5,9 +5,21 @@ function Versions() {
 
   return (
     <ul className="versions">
-      <li className="electron-version">Electron v{versions.electron}</li>
-      <li className="chrome-version">Chromium v{versions.chrome}</li>
-      <li className="node-version">Node v{versions.node}</li>
+      <li>
+        <a className="info-footer" target="_blank" rel="noreferrer" href="https://www.last.fm/">
+          tags generated from last.fm
+        </a>
+      </li>
+      <li>
+        <a
+          className="info-footer"
+          target="_blank"
+          rel="noreferrer"
+          href="https://mgoertzen.my.canva.site/"
+        >
+          mitch goertzen 2026
+        </a>
+      </li>
     </ul>
   )
 }

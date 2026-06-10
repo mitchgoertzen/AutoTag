@@ -1,4 +1,3 @@
-import { View } from 'electron'
 import React from 'react'
 
 function Running({ onEnd }) {
