@@ -84,10 +84,18 @@ color: var(--ev-c-text-1);
   text-align: center;
   width:100%;
   justify-content: center;
-  border-color: beige;
-margin-top: 20px;
+  border-color: var( --ev-c-white-mute);
+  margin-top: 20px;
   border-style: dashed;
   border-width: 1px;
+}
+
+.files:hover{
+  border-color: var(--ev-c-green-1);
+}
+.files:active{
+  opacity: 0.7;
+  color: var(--ev-button-alt-border);
 }
 
 .tip {
@@ -137,21 +145,20 @@ margin-top: 20px;
   padding: 0 20px;
   line-height: 38px;
   font-size: 14px;
-  border-color: var(--ev-button-alt-border);
+  border-color: var( --ev-c-white-mute);
+  border-width: 1px;
   color: var(--ev-button-alt-text);
   background-color: var(--ev-button-alt-bg);
 }
 
 .action a:hover {
-  border-color: var(--ev-button-alt-hover-border);
+  border-color: var(--ev-button-alt-border);
   color: var(--ev-button-alt-hover-text);
-  background-color: var(--ev-button-alt-hover-bg);
 }
 
 .action a:active {
-  border-color: var(--ev-button-alt-hover-bg);
-  color: var(--ev-button-alt-hover-text);
-  background-color: var(--ev-button-alt-border);
+  opacity: 0.7;
+  color: var(--ev-button-alt-border);
 }
 
 .versions {

@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import run from './tags'
 import { dialog } from 'electron'
+import { useState } from 'react'
 
 function createWindow() {
   // Create the browser window.
@@ -41,6 +42,10 @@ function createWindow() {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  let isDialogOpen = false
+
+  let path = ''
+
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
@@ -51,17 +56,28 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // ipcMain.on('ping', () => {
-  //   console.log('pong')
-  // })
+  ipcMain.on('start', () => {
+    if (path !== '') {
+      run(path + '\\').then(() => {
+        console.log('DONE')
+      })
+    } else {
+      console.log('no folder selected')
+    }
+  })
 
   ipcMain.on('open', () => {
-    dialog.showOpenDialog({ properties: ['openDirectory'] }).then((response) => {
-      console.log('folder returned:', response)
-      if (!response.canceled) {
-        console.log('start script at:', response.filePaths[0])
-      }
-    })
+    if (!isDialogOpen) {
+      isDialogOpen = true
+      dialog.showOpenDialog({ properties: ['openDirectory'] }).then((response) => {
+        isDialogOpen = false
+        console.log('folder returned:', response)
+        if (!response.canceled) {
+          console.log('start script at:', response.filePaths[0])
+          path = response.filePaths[0]
+        }
+      })
+    }
   })
 
   createWindow()

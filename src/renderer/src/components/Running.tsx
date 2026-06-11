@@ -8,7 +8,7 @@ function Running({ onEnd }) {
   return (
     <div className="scan">
       <div className="text">
-        running...
+        scanning...
         <div className="action">
           <a key={'endScan'} target="_blank" rel="noreferrer" onClick={handlePress}>
             Quit

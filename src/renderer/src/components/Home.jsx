@@ -1,31 +1,31 @@
 import Versions from './Versions'
 
 function Home({ onStart }) {
-  const ipcHandle = () => window.electron.ipcRenderer.send('open')
+  const ipcHandleFiles = () => window.electron.ipcRenderer.send('open')
+  const ipcHandleStart = () => window.electron.ipcRenderer.send('start')
 
-  const handlePress = () => {
+  const handleStart = () => {
     onStart()
+    ipcHandleStart()
   }
 
   return (
     <>
       <div className="text">
-        Update your album <span className="react">genres</span>
+        update your album genre <span className="react">tags</span>
       </div>
       <div className="actions">
         <div className="action">
-          <a key={'startScan'} target="_blank" rel="noreferrer" onClick={handlePress}>
-            Scan Files
+          <a key={'startScan'} target="_blank" rel="noreferrer" onClick={handleStart}>
+            scan files
           </a>
         </div>
       </div>
 
       <Versions></Versions>
-      <div className="files">
-        <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
-          choose album folder
-        </a>
-      </div>
+      <a style={{ width: '100%' }} target="_blank" rel="noreferrer" onClick={ipcHandleFiles}>
+        <div className="files">choose album folder</div>
+      </a>
     </>
   )
 }

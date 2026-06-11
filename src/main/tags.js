@@ -160,9 +160,9 @@ async function getGenres(link) {
   return result
 }
 
-async function run() {
+async function run(filePath) {
   console.log('run')
-  for await (const file of getFiles()) {
+  for await (const file of getFiles(filePath)) {
     if (file.name !== 'cover.jpg') {
       const blob = await openAsBlob(file.path)
       const arrayBuffer = await blob.arrayBuffer()
@@ -189,7 +189,7 @@ async function run() {
   }
 }
 
-async function* getFiles(filepath = 'I:/Music/New Albums/') {
+async function* getFiles(filepath) {
   const e = await fs.promises.readdir(filepath, { withFileTypes: true })
   const entries = e.filter((item) => !/(^|\/)\.[^\/\.]/g.test(item.name))
 
