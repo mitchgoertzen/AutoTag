@@ -4,7 +4,6 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import run from './tags'
 import { dialog } from 'electron'
-import { useState } from 'react'
 
 function createWindow() {
   // Create the browser window.
@@ -36,6 +35,16 @@ function createWindow() {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    setTimeout(() => {
+      const dataToSend = { message: 'Hello from the Main Process!', status: 200 }
+      console.log('here')
+      mainWindow.webContents.send('your-event', dataToSend)
+    }, 3000)
+  })
+
+  return mainWindow
 }
 
 // This method will be called when Electron has finished
@@ -55,11 +64,15 @@ app.whenReady().then(() => {
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
+  const window = createWindow()
 
   ipcMain.on('start', () => {
     if (path !== '') {
       run(path + '\\').then(() => {
         console.log('DONE')
+        const dataToSend = { message: 'Hello from the Main Process!', status: 200 }
+        console.log('here')
+        window.webContents.send('your-event', dataToSend)
       })
     } else {
       console.log('no folder selected')
@@ -79,8 +92,6 @@ app.whenReady().then(() => {
       })
     }
   })
-
-  createWindow()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

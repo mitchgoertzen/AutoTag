@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import Versions from './Versions'
 
 function Home({ onStart }) {
