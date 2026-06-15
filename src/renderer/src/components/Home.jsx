@@ -1,14 +1,14 @@
-import { useEffect } from 'react'
-import Versions from './Versions'
+import Versions from './Versions';
 
 function Home({ onStart }) {
-  const ipcHandleFiles = () => window.electron.ipcRenderer.send('open')
-  const ipcHandleStart = () => window.electron.ipcRenderer.send('start')
+  const ipcHandleFiles = () => window.electron.ipcRenderer.send('open');
+  const ipcHandleStart = () => window.electron.ipcRenderer.send('start');
 
   const handleStart = () => {
-    onStart()
-    ipcHandleStart()
-  }
+    console.log('button press');
+    onStart();
+    ipcHandleStart();
+  };
 
   return (
     <>
@@ -28,7 +28,7 @@ function Home({ onStart }) {
         <div className="files">choose album folder</div>
       </a>
     </>
-  )
+  );
 }
 
-export default Home
+export default Home;

@@ -35,14 +35,13 @@ code {
   margin-bottom: 60px;
 }
 
-.a{
-  
+.a {
 }
 
-.info-footer{
-text-decoration: none;
+.info-footer {
+  text-decoration: none;
 
-color: var(--ev-c-text-1);
+  color: var(--ev-c-text-1);
 }
 
 .logo {
@@ -76,24 +75,36 @@ color: var(--ev-c-text-1);
   padding: 16px 0;
 }
 
+.textTwo {
+  width: 100%;
+}
+
+.box {
+  display: flex;
+  width: fit-content;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
 .files {
   font-size: 16px;
   color: var(--ev-c-text-1);
   font-weight: 700;
   line-height: 32px;
   text-align: center;
-  width:100%;
+  width: 100%;
   justify-content: center;
-  border-color: var( --ev-c-white-mute);
+  border-color: var(--ev-c-white-mute);
   margin-top: 20px;
   border-style: dashed;
   border-width: 1px;
 }
 
-.files:hover{
+.files:hover {
   border-color: var(--ev-c-green-1);
 }
-.files:active{
+.files:active {
   opacity: 0.7;
   color: var(--ev-button-alt-border);
 }
@@ -145,7 +156,7 @@ color: var(--ev-c-text-1);
   padding: 0 20px;
   line-height: 38px;
   font-size: 14px;
-  border-color: var( --ev-c-white-mute);
+  border-color: var(--ev-c-white-mute);
   border-width: 1px;
   color: var(--ev-button-alt-text);
   background-color: var(--ev-button-alt-bg);

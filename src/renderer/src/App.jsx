@@ -6,13 +6,6 @@ import { useCallback } from 'react'
 function App() {
   const [currentScreen, setCurrentScreen] = useState('home')
 
-  useEffect(() => {
-    // Set up the listener using the function defined in preload.js
-    window.test.onReceiveData((data) => {
-      console.log('ui data', data)
-    })
-  }, [])
-
   const renderScreen = useCallback(() => {
     let screen
     screen =

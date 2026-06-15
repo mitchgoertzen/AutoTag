@@ -1,18 +1,20 @@
-import { openAsBlob } from 'node:fs'
-import MP3Tag from 'mp3tag.js'
-import * as cheerio from 'cheerio'
-import fs from 'fs'
-import path from 'path'
+import { openAsBlob } from 'node:fs';
+import MP3Tag from 'mp3tag.js';
+import * as cheerio from 'cheerio';
+import fs from 'fs';
+import path from 'path';
 
-let read = 0
-let currentAlbum = ''
-let currentArist = ''
-let currentGenres = ''
-let currentHash = ''
+let read = 0;
+let currentAlbum = '';
+let currentArist = '';
+let currentGenres = '';
+let currentHash = '';
 
-const savedGenres = new Map()
+let mainWindow;
 
-const genreSeparator = ', '
+const savedGenres = new Map();
+
+const genreSeparator = ', ';
 const ignoredGenres = new Set([
   'screamo',
   'daethmetal',
@@ -68,57 +70,57 @@ const ignoredGenres = new Set([
   'kawaiimetal',
   'indiepop',
   'drumless'
-])
+]);
 
-const count = 9999
-let index = 0
+const count = 9999;
+let index = 0;
 
 function PascalCase(string) {
   const newString = string.replace(/(\w)(\w*)/g, function (g0, g1, g2) {
-    return g1.toUpperCase() + g2.toLowerCase()
-  })
-  return newString
+    return g1.toUpperCase() + g2.toLowerCase();
+  });
+  return newString;
 }
 
 async function loadWebpage(link) {
-  let genres = []
+  let genres = [];
   const tags = await cheerio.fromURL(link).then(($) => {
-    console.log('loading', link)
-    const $data = $('.tags-list:first').find('li')
+    console.log('loading', link);
+    const $data = $('.tags-list:first').find('li');
 
-    let $curr = $data.first()
+    let $curr = $data.first();
     for (let i = 0; i < $data.length; i++) {
-      let genre = $curr.text()
-      var hasNumber = /\d/
+      let genre = $curr.text();
+      var hasNumber = /\d/;
 
       if (!hasNumber.test(genre) && !ignoredGenres.has(genre.replaceAll(' ', ''))) {
-        genres.push(PascalCase(genre))
+        genres.push(PascalCase(genre));
       }
-      $curr = $curr.next()
+      $curr = $curr.next();
     }
-    return genres
-  })
-  return tags
+    return genres;
+  });
+  return tags;
 }
 
 function parseFolderName(folder) {
-  let artist = ''
+  let artist = '';
 
-  let c = folder.slice(0, 1)
+  let c = folder.slice(0, 1);
   do {
-    artist += c
-    folder = folder.slice(1)
-    c = folder.slice(0, 1)
-  } while (c !== '-')
+    artist += c;
+    folder = folder.slice(1);
+    c = folder.slice(0, 1);
+  } while (c !== '-');
 
-  currentArist = artist.trim()
-  currentAlbum = folder.slice(1).trim()
+  currentArist = artist.trim();
+  currentAlbum = folder.slice(1).trim();
 }
 
 async function getGenres(link) {
-  let result
-  let pass = false
-  let retryAttempts = 0
+  let result;
+  let pass = false;
+  let retryAttempts = 0;
 
   while (true) {
     try {
@@ -126,63 +128,64 @@ async function getGenres(link) {
         lowerCaseTags: true,
         lowerCaseAttributeNames: true
       }).then((data) => {
-        currentGenres = ''
-        data.sort()
+        currentGenres = '';
+        data.sort();
         for (let i = 0; i < data.length; i++) {
           if (i > 0) {
-            currentGenres += genreSeparator
+            currentGenres += genreSeparator;
           }
-          currentGenres += data[i].trim()
+          currentGenres += data[i].trim();
         }
 
-        pass = true
-        result = true
-      })
+        pass = true;
+        result = true;
+      });
     } catch (e) {
-      retryAttempts++
-      console.log('input:', e.input)
-      console.log('FAILED')
-      console.log('retrying...')
-      const newLink = e.input
+      retryAttempts++;
+      console.log('input:', e.input);
+      console.log('FAILED');
+      console.log('retrying...');
+      const newLink = e.input;
       if (newLink !== undefined) {
-        link = 'https://www.last.fm' + e.input
+        link = 'https://www.last.fm' + e.input;
       } else {
-        break
+        break;
       }
     }
 
     if (pass || retryAttempts > 1) {
-      console.log('done')
-      break
+      console.log('done');
+      break;
     }
   }
 
-  return result
+  return result;
 }
 
-async function run(filePath) {
-  console.log('run')
+async function run(window, filePath) {
+  mainWindow = window;
+  console.log('run');
   for await (const file of getFiles(filePath)) {
     if (file.name !== 'cover.jpg') {
-      const blob = await openAsBlob(file.path)
-      const arrayBuffer = await blob.arrayBuffer()
-      const mp3tag = new MP3Tag(arrayBuffer)
-      mp3tag.read()
+      const blob = await openAsBlob(file.path);
+      const arrayBuffer = await blob.arrayBuffer();
+      const mp3tag = new MP3Tag(arrayBuffer);
+      mp3tag.read();
       if (!savedGenres.get(currentHash)) {
-        console.log('setting ' + currentHash + ' map entry to ' + mp3tag.tags.v2.TCON)
-        savedGenres.set(currentHash, mp3tag.tags.v2.TCON)
+        console.log('setting ' + currentHash + ' map entry to ' + mp3tag.tags.v2.TCON);
+        savedGenres.set(currentHash, mp3tag.tags.v2.TCON);
       }
       if (read === 1) {
-        console.log(mp3tag.tags.v2.TCON)
+        console.log(mp3tag.tags.v2.TCON);
       } else {
         if (currentGenres.length > 0) {
-          mp3tag.tags.genre = currentGenres
-          mp3tag.save()
-          fs.writeFileSync(file.path, mp3tag.buffer)
+          mp3tag.tags.genre = currentGenres;
+          mp3tag.save();
+          fs.writeFileSync(file.path, mp3tag.buffer);
         } else {
-          mp3tag.tags.genre = savedGenres.get(currentHash)
-          mp3tag.save()
-          fs.writeFileSync(file.path, mp3tag.buffer)
+          mp3tag.tags.genre = savedGenres.get(currentHash);
+          mp3tag.save();
+          fs.writeFileSync(file.path, mp3tag.buffer);
         }
       }
     }
@@ -190,42 +193,43 @@ async function run(filePath) {
 }
 
 async function* getFiles(filepath) {
-  const e = await fs.promises.readdir(filepath, { withFileTypes: true })
-  const entries = e.filter((item) => !/(^|\/)\.[^\/\.]/g.test(item.name))
+  const e = await fs.promises.readdir(filepath, { withFileTypes: true });
+  const entries = e.filter((item) => !/(^|\/)\.[^\/\.]/g.test(item.name));
 
-  const length = entries.length
+  const length = entries.length;
 
   for (let i = 0; i < length; i++) {
-    const file = entries[i]
+    const file = entries[i];
 
     //TODO: deal with folders insde album (ie: disc 1 disc 2)
     if (file.isDirectory()) {
       if (index++ === count) {
-        console.log('quitting at ', count)
-        break
+        console.log('quitting at ', count);
+        break;
       }
-      parseFolderName(file.name)
-      const artist = currentArist.replaceAll(' ', '+')
-      const album = currentAlbum.replaceAll(' ', '+')
-      const link = 'https://www.last.fm/music/' + artist + '/' + album
-      currentHash = artist + '' + album
+      parseFolderName(file.name);
+      const artist = currentArist.replaceAll(' ', '+');
+      const album = currentAlbum.replaceAll(' ', '+');
+      const link = 'https://www.last.fm/music/' + artist + '/' + album;
+      currentHash = artist + '' + album;
       const success = await getGenres(link).then((result) => {
-        return result
-      })
+        mainWindow.send('your-event', artist + ' - ' + album);
+        return result;
+      });
       if (success) {
         if (currentGenres === '') {
-          console.log('Updating', file.name, 'genre to previously saved genre')
+          console.log('Updating', file.name, 'genre to previously saved genre');
         } else {
-          console.log('Updating', file.name, 'genres to', currentGenres)
+          console.log('Updating', file.name, 'genres to', currentGenres);
         }
 
-        yield* getFiles(`${filepath}${file.name}/`)
-        console.log('\n')
+        yield* getFiles(`${filepath}${file.name}/`);
+        console.log('\n');
       }
     } else if (path.extname(file.name) === '.mp3') {
-      yield { ...file, path: filepath + file.name }
+      yield { ...file, path: filepath + file.name };
     }
   }
 }
 
-export default run
+export default run;
