@@ -7,7 +7,7 @@ function Home({ onStart }) {
   const handleStart = () => {
     console.log('button press');
     onStart();
-    ipcHandleStart();
+    // ipcHandleStart();
   };
 
   return (

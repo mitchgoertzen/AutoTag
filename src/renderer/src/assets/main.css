@@ -4,7 +4,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow-y: overlay;
+  overflow-x: hidden;
   background-size: cover;
   user-select: none;
 }
@@ -32,7 +33,7 @@ code {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  margin-bottom: 60px;
+  width: 100%;
 }
 
 .a {
@@ -70,9 +71,8 @@ code {
   color: var(--ev-c-text-1);
   font-weight: 700;
   line-height: 32px;
-  text-align: center;
+  text-align: start;
   margin: 0 10px;
-  padding: 16px 0;
 }
 
 .textTwo {
@@ -81,10 +81,19 @@ code {
 
 .box {
   display: flex;
-  width: fit-content;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  background-color: black;
+  width: 80vw;
+  height: 50vh;
+  border-style: solid;
+  border-width: 1px;
+  border-color: var(--ev-c-green-1);
+  margin-top: 20px;
+  margin-bottom: 75px;
+  min-width: 400px;
+}
+
+.box {
+  overflow: scroll;
 }
 
 .files {
@@ -116,12 +125,10 @@ code {
   font-weight: 600;
 }
 .scan {
-  margin-bottom: 20px;
-  -webkit-user-drag: none;
-  height: 128px;
-  width: 128px;
-  will-change: filter;
-  transition: filter 300ms;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
 }
 
 .react {
@@ -196,6 +203,25 @@ code {
   &:last-child {
     border: none;
   }
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+  background-color: #00000000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ev-c-green-2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ev-c-green-1);
+}
+
+::-webkit-scrollbar-corner {
+  background: #00000000;
 }
 
 @media (max-width: 720px) {
