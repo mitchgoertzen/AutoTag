@@ -11,9 +11,14 @@ if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('test', {
       onReceiveData: (callback) => {
-        console.log('preload');
-        ipcRenderer.removeAllListeners('your-event');
-        ipcRenderer.once('your-event', (_event, value) => callback(value));
+        console.log('preload data');
+        ipcRenderer.removeAllListeners('recv-album');
+        ipcRenderer.once('recv-album', (_event, value) => callback(value));
+      },
+      onFolderSelected: (callback) => {
+        console.log('preload folder');
+        ipcRenderer.removeAllListeners('folder-select');
+        ipcRenderer.once('folder-select', (_event, value) => callback(value));
       }
     });
     contextBridge.exposeInMainWorld('electron', electronAPI);

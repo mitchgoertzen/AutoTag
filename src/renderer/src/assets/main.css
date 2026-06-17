@@ -99,15 +99,17 @@ code {
 .files {
   font-size: 16px;
   color: var(--ev-c-text-1);
-  font-weight: 700;
+  font-weight: 200;
   line-height: 32px;
   text-align: center;
-  width: 100%;
+  width: 300px;
   justify-content: center;
   border-color: var(--ev-c-white-mute);
   margin-top: 20px;
   border-style: dashed;
   border-width: 1px;
+  flex-direction: row;
+  display: flex;
 }
 
 .files:hover {
@@ -150,6 +152,19 @@ code {
 .action {
   flex-shrink: 0;
   padding: 6px;
+}
+
+.icon {
+  align-content: center;
+  padding-left: 10px;
+  padding-right: 15px;
+  height: 30px;
+  padding-top: 3px;
+  padding-bottom: 1px;
+}
+
+.icon a:active {
+  color: var(--ev-c-green-1);
 }
 
 .action a {

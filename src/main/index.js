@@ -10,8 +10,8 @@ function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
-    minHeight: 300,
-    minWidth: 400,
+    minHeight: 335,
+    minWidth: 450,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -64,7 +64,7 @@ app.whenReady().then(() => {
     if (path !== '') {
       run(window.webContents, path + '\\').then(() => {
         console.log('DONE');
-        window.webContents.send('your-event', 'scan complete!');
+        window.webContents.send('recv-album', 'scan complete!');
       });
     } else {
       console.log('no folder selected');
@@ -80,6 +80,7 @@ app.whenReady().then(() => {
         if (!response.canceled) {
           console.log('start script at:', response.filePaths[0]);
           path = response.filePaths[0];
+          window.webContents.send('folder-select', path);
         }
       });
     }

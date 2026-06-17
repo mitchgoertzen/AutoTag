@@ -213,7 +213,7 @@ async function* getFiles(filepath) {
       const link = 'https://www.last.fm/music/' + artist + '/' + album;
       currentHash = artist + '' + album;
       const success = await getGenres(link).then((result) => {
-        mainWindow.send('your-event', artist + ' - ' + album);
+        mainWindow.send('recv-album', artist + ' - ' + album);
         return result;
       });
       if (success) {
