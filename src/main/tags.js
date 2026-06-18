@@ -12,6 +12,8 @@ let currentHash = '';
 
 let mainWindow;
 
+let QUIT = false;
+
 const savedGenres = new Map();
 
 const genreSeparator = ', ';
@@ -69,7 +71,14 @@ const ignoredGenres = new Set([
   'heavy',
   'kawaiimetal',
   'indiepop',
-  'drumless'
+  'drumless',
+  'goodcharlotte',
+  'newrelease',
+  'rezension',
+  'drumless',
+  'crossover',
+  'goodleftundone',
+  'australia'
 ]);
 
 const count = 9999;
@@ -85,7 +94,7 @@ function PascalCase(string) {
 async function loadWebpage(link) {
   let genres = [];
   const tags = await cheerio.fromURL(link).then(($) => {
-    console.log('loading', link);
+    //   console.log('loading', link);
     const $data = $('.tags-list:first').find('li');
 
     let $curr = $data.first();
@@ -103,6 +112,8 @@ async function loadWebpage(link) {
   return tags;
 }
 
+//TODO: if more than one hyphen exists, save all version of artist - artist
+//eg. Dinosaur Pile-Up - album
 function parseFolderName(folder) {
   let artist = '';
 
@@ -154,7 +165,7 @@ async function getGenres(link) {
     }
 
     if (pass || retryAttempts > 1) {
-      console.log('done');
+      //    console.log('done');
       break;
     }
   }
@@ -163,29 +174,35 @@ async function getGenres(link) {
 }
 
 async function run(window, filePath) {
+  QUIT = false;
   mainWindow = window;
   console.log('run');
   for await (const file of getFiles(filePath)) {
-    if (file.name !== 'cover.jpg') {
-      const blob = await openAsBlob(file.path);
-      const arrayBuffer = await blob.arrayBuffer();
-      const mp3tag = new MP3Tag(arrayBuffer);
-      mp3tag.read();
-      if (!savedGenres.get(currentHash)) {
-        console.log('setting ' + currentHash + ' map entry to ' + mp3tag.tags.v2.TCON);
-        savedGenres.set(currentHash, mp3tag.tags.v2.TCON);
-      }
-      if (read === 1) {
-        console.log(mp3tag.tags.v2.TCON);
-      } else {
-        if (currentGenres.length > 0) {
-          mp3tag.tags.genre = currentGenres;
-          mp3tag.save();
-          fs.writeFileSync(file.path, mp3tag.buffer);
+    if (QUIT) {
+      console.log('quitting');
+      break;
+    } else {
+      if (file.name !== 'cover.jpg') {
+        const blob = await openAsBlob(file.path);
+        const arrayBuffer = await blob.arrayBuffer();
+        const mp3tag = new MP3Tag(arrayBuffer);
+        mp3tag.read();
+        if (!savedGenres.get(currentHash)) {
+          console.log('setting ' + currentHash + ' map entry to ' + mp3tag.tags.v2.TCON);
+          savedGenres.set(currentHash, mp3tag.tags.v2.TCON);
+        }
+        if (read === 1) {
+          console.log(mp3tag.tags.v2.TCON);
         } else {
-          mp3tag.tags.genre = savedGenres.get(currentHash);
-          mp3tag.save();
-          fs.writeFileSync(file.path, mp3tag.buffer);
+          if (currentGenres.length > 0) {
+            mp3tag.tags.genre = currentGenres;
+            mp3tag.save();
+            fs.writeFileSync(file.path, mp3tag.buffer);
+          } else {
+            mp3tag.tags.genre = savedGenres.get(currentHash);
+            mp3tag.save();
+            fs.writeFileSync(file.path, mp3tag.buffer);
+          }
         }
       }
     }
@@ -213,23 +230,31 @@ async function* getFiles(filepath) {
       const link = 'https://www.last.fm/music/' + artist + '/' + album;
       currentHash = artist + '' + album;
       const success = await getGenres(link).then((result) => {
-        mainWindow.send('recv-album', artist + ' - ' + album);
         return result;
       });
       if (success) {
         if (currentGenres === '') {
           console.log('Updating', file.name, 'genre to previously saved genre');
+          mainWindow.send('recv-album', { album: file.name, genres: savedGenres.get(currentHash) });
         } else {
           console.log('Updating', file.name, 'genres to', currentGenres);
+          mainWindow.send('recv-album', { album: file.name, genres: currentGenres });
+          mainWindow.send('folder', 'test');
         }
 
         yield* getFiles(`${filepath}${file.name}/`);
         console.log('\n');
       }
-    } else if (path.extname(file.name) === '.mp3') {
-      yield { ...file, path: filepath + file.name };
     }
+
+    // else if (path.extname(file.name) === '.mp3') {
+    //   yield { ...file, path: filepath + file.name };
+    // }
   }
 }
 
-export default run;
+function setQuit(value) {
+  QUIT = value;
+}
+
+export { run, setQuit };

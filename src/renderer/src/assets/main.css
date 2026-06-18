@@ -76,7 +76,34 @@ code {
 }
 
 .textTwo {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  justify-content: center;
+}
+
+.genre {
+  height: 100%;
+  margin-right: 5px;
+  font-size: 10px;
+  height: 40px;
+  min-width: 75px;
+  width: 75px;
+  justify-self: center;
+  display: table-cell;
+  vertical-align: middle;
+  background-color: var(--ev-c-black-soft);
+  justify-content: center;
+  text-align: center;
+}
+
+.selectable {
   width: 100%;
+  height: 100%;
+  background-color: black;
+}
+.selectable:active {
+  background-color: var(--ev-c-green-1);
 }
 
 .box {

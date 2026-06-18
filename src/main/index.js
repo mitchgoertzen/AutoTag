@@ -2,7 +2,7 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
-import run from './tags';
+import { run, setQuit } from './tags';
 import { dialog } from 'electron';
 
 function createWindow() {
@@ -41,6 +41,8 @@ function createWindow() {
   return mainWindow;
 }
 
+const genreMap = new Map();
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -64,10 +66,27 @@ app.whenReady().then(() => {
     if (path !== '') {
       run(window.webContents, path + '\\').then(() => {
         console.log('DONE');
-        window.webContents.send('recv-album', 'scan complete!');
+        window.webContents.send('scan-complete', 'scan complete!');
       });
     } else {
       console.log('no folder selected');
+    }
+  });
+
+  ipcMain.on('quit', () => {
+    setQuit(true);
+  });
+
+  ipcMain.on('save', (_event, value) => {
+    console.log('folder here', value);
+  });
+
+  ipcMain.on('genre', (_event, value) => {
+    console.log(value.album, 'will need to', value.remove, value.genre);
+    if (value.remove) {
+      console.log('remove');
+    } else {
+      console.log('add');
     }
   });
 

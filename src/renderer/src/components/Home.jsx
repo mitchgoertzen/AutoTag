@@ -7,11 +7,15 @@ function Home({ onStart }) {
   const ipcHandleStart = () => window.electron.ipcRenderer.send('start');
 
   const [folder, setFolder] = useState('');
+  const [folderError, setFolderError] = useState(false);
 
   const handleStart = () => {
-    console.log('button press');
-    onStart();
-    ipcHandleStart();
+    if (folder !== '') {
+      onStart();
+      ipcHandleStart();
+    } else {
+      setFolderError(true);
+    }
   };
 
   const handleFolderSelect = useCallback((newFolder) => {
@@ -20,6 +24,7 @@ function Home({ onStart }) {
 
   window.test.onFolderSelected((input) => {
     console.log('newFolder', input);
+    setFolderError(false);
     handleFolderSelect(input);
   });
   return (
@@ -46,6 +51,7 @@ function Home({ onStart }) {
           <img src={icon} className="icon" />
           <div>{folder !== '' ? folder : 'choose album folder'}</div>
         </a>
+        {folderError && <div style={{ color: 'red', fontSize: 12 }}>no folder selected</div>}
         <Versions></Versions>
       </div>
     </>

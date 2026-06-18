@@ -11,14 +11,19 @@ if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('test', {
       onReceiveData: (callback) => {
-        console.log('preload data');
+        //   console.log('preload data');
         ipcRenderer.removeAllListeners('recv-album');
         ipcRenderer.once('recv-album', (_event, value) => callback(value));
       },
       onFolderSelected: (callback) => {
-        console.log('preload folder');
+        //   console.log('preload folder');
         ipcRenderer.removeAllListeners('folder-select');
         ipcRenderer.once('folder-select', (_event, value) => callback(value));
+      },
+      onScanComplete: (callback) => {
+        // console.log('preload scan');
+        ipcRenderer.removeAllListeners('scan-complete');
+        ipcRenderer.once('scan-complete', (_event, value) => callback(value));
       }
     });
     contextBridge.exposeInMainWorld('electron', electronAPI);

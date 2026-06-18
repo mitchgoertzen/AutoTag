@@ -11,9 +11,13 @@
   --ev-c-gray-2: #414853;
   --ev-c-gray-3: #32363f;
 
-  --ev-c-green-1:#00bb10;
-  --ev-c-green-2:#008612;
-  --ev-c-green-3:#021d05;
+  --ev-c-red-1: #da0000;
+  --ev-c-red-2: #ac0000;
+  --ev-c-red-3: #550000;
+
+  --ev-c-green-1: #00bb10;
+  --ev-c-green-2: #008612;
+  --ev-c-green-3: #021d05;
 
   --ev-c-text-1: rgba(255, 255, 245, 0.86);
   --ev-c-text-2: rgba(235, 235, 245, 0.6);
@@ -28,7 +32,7 @@
 }
 
 :root {
-  --color-background: -webkit-linear-gradient(285deg, var(--ev-c-black) 35%,var(--ev-c-green-3));
+  --color-background: -webkit-linear-gradient(285deg, var(--ev-c-black) 35%, var(--ev-c-green-3));
   --color-background-soft: var(--ev-c-black-soft);
   --color-background-mute: var(--ev-c-black-mute);
 
