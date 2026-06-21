@@ -1,21 +1,13 @@
-import { useEffect, useState, useCallback, FlatList, Text } from 'react';
+import { useEffect, useState, useCallback, FlatList, Text, useMemo } from 'react';
 import GenreWidget from '../widgets/genreWidget';
+import generateHash from '../../../util/util';
 
 function Running({ onEnd }) {
   const [scanComplete, setScanComplete] = useState(false);
 
   const [data, setData] = useState([]);
 
-  const [genreMap, setGenreMap] = useState(new Map());
-
-  const generateHash = (string) => {
-    let hash = 0;
-    for (const char of string) {
-      hash = (hash << 5) - hash + char.charCodeAt(0);
-      hash |= 0; // Constrain to 32bit integer
-    }
-    return hash;
-  };
+  // const [genreMap, setGenreMap] = useState(new Map());
 
   function ltrim(str) {
     if (!str) return str;
@@ -27,118 +19,156 @@ function Running({ onEnd }) {
     return str.replace(/\s+$/g, '');
   }
 
+  const ipcHandleUpdateGenres = (data) => window.electron.ipcRenderer.send('update-genre', data);
   const ipcHandleQuit = () => window.electron.ipcRenderer.send('quit');
   const ipcHandleSave = () => window.electron.ipcRenderer.send('save');
 
   const ipcHandleGenrePress = (a, g, r) =>
-    window.electron.ipcRenderer.send('genre', { album: a, genre: g, remove: r });
+    window.electron.ipcRenderer.send('genre', { album: a, genre: g, add: r });
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
+    console.log('save');
+    // console.log('map', genreMap);
     ipcHandleSave();
-    onEnd();
-  };
+  }, []);
+
   const handleQuit = () => {
     ipcHandleQuit();
     onEnd();
   };
 
-  const updateGenreMap = useCallback(
-    (add, id, genre) => {
-      const currentMap = new Map(genreMap);
-      const albumGenres = currentMap.get(id);
+  // const updateGenreMap = useCallback(
+  //   (add, id, genre) => {
+  //     console.log('genreMap', genreMap);
+  //     const currentMap = new Map(genreMap);
+  //     const albumGenres = currentMap.get(id);
 
-      console.log('id:', id);
-      console.log('before:', albumGenres);
-      if (add) {
-        console.log('add');
-        albumGenres.add(genre);
-      } else {
-        console.log('remove');
-        albumGenres.delete(genre);
-      }
-      currentMap.set(id, albumGenres);
-      console.log(genre, 'in', id);
-      console.log('after:', albumGenres);
-      setGenreMap(currentMap);
-    },
-    [genreMap]
-  );
+  //     console.log('id:', id);
+  //     console.log('before:', albumGenres);
+  //     if (add) {
+  //       console.log('add');
+  //       albumGenres.add(genre);
+  //     } else {
+  //       console.log('remove');
+  //       albumGenres.delete(genre);
+  //     }
+  //     currentMap.set(id, albumGenres);
+  //     console.log(genre, 'in', id);
+  //     console.log('after:', albumGenres);
+  //     setGenreMap(currentMap);
+  //     console.log(currentMap);
+  //   },
+  //   [genreMap]
+  // );
 
   const updateData = useCallback(
     (newData) => {
-      console.log('updateData');
       let genreArray = [];
       const currentData = [...data];
       if (newData.genres) {
         genreArray = newData.genres.split(',');
       }
 
-      const formattedArray = genreArray.map((item) => ltrim(item));
+      // console.log('updateData genreArray', genreArray);
+      const formattedArray = genreArray.map((item) => (item[0] === ' ' ? ltrim(item) : item));
+      //  console.log('newData.album', newData.album);
       const id = generateHash(newData.album);
       currentData.push({ id: id, album: newData.album, genres: formattedArray });
-      const currentMap = new Map(genreMap);
-      currentMap.set(id, new Set(formattedArray));
-      setGenreMap(currentMap);
+      //   const currentMap = new Map(existingGenres);
+      ipcHandleUpdateGenres({ album: id, genres: new Set(formattedArray) });
+      // currentMap.set(id);
+      // setGenreMap(currentMap);
+      // console.log(currentMap);
       setData(currentData);
     },
-    [data, genreMap, setGenreMap, setData]
+    [data, setData]
   );
 
-  window.test.onReceiveData((input) => {
-    console.log('input to ui', input);
-    updateData(input);
-  });
+  useEffect(() => {
+    window.test.onReceiveData((input) => {
+      updateData(input);
+    });
+  }, [updateData]);
 
   window.test.onScanComplete((input) => {
     console.log('scan complete');
     setScanComplete(true);
   });
 
-  const renderGenres = useCallback(
-    (genres, albumID) => {
-      return genres.map((g) => (
-        <GenreWidget
-          key={g}
-          title={ltrim(rtrim(g))}
-          onPress={(a) => {
-            updateGenreMap(a, albumID, g);
-            // ipcHandleGenrePress(albumID, ltrim(rtrim(g)), a);
-          }}
-        />
-      ));
-    },
-    [updateGenreMap]
-  );
-
-  const renderList = useCallback(() => {
-    return data.map(({ id, album, genres }) => (
-      // 3. Always assign a unique "key" prop to the outermost list element
-
-      <div
-        key={id}
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          paddingBottom: '5px',
-          paddingTop: '5px',
-          alignItems: 'center'
+  const renderGenres = useCallback((genres, albumID) => {
+    return genres.map((g) => (
+      <GenreWidget
+        key={g}
+        title={ltrim(rtrim(g))}
+        onPress={(a) => {
+          ipcHandleGenrePress(albumID, ltrim(rtrim(g)), a);
         }}
-      >
-        <div className="textTwo" key={album}>
-          <div style={{ width: 250 }}>{album}</div>
-        </div>
+      />
+    ));
+  }, []);
+
+  const renderList = useCallback(
+    (map) => {
+      return data.map(({ id, album, genres }) => (
+        // 3. Always assign a unique "key" prop to the outermost list element
+
         <div
+          key={id}
           style={{
-            display: 'table',
-            alignContent: 'flex-start',
-            borderSpacing: '5px'
+            display: 'flex',
+            flexDirection: 'row',
+            paddingBottom: '5px',
+            paddingTop: '5px',
+            alignItems: 'center'
           }}
         >
-          {renderGenres(genres, id)}
+          <div className="textTwo" key={album}>
+            <div style={{ width: 250 }}>{album}</div>
+          </div>
+          <div
+            style={{
+              display: 'table',
+              alignContent: 'flex-start',
+              borderSpacing: '5px'
+            }}
+          >
+            {renderGenres(genres, id, map)}
+          </div>
         </div>
-      </div>
-    ));
-  }, [data, renderGenres]);
+      ));
+    },
+    [data, renderGenres]
+  );
+
+  // const renderListfuncton = useMemo(() => {
+  //   return data.map(({ id, album, genres }) => (
+  //     // 3. Always assign a unique "key" prop to the outermost list element
+
+  //     <div
+  //       key={id}
+  //       style={{
+  //         display: 'flex',
+  //         flexDirection: 'row',
+  //         paddingBottom: '5px',
+  //         paddingTop: '5px',
+  //         alignItems: 'center'
+  //       }}
+  //     >
+  //       <div className="textTwo" key={album}>
+  //         <div style={{ width: 250 }}>{album}</div>
+  //       </div>
+  //       <div
+  //         style={{
+  //           display: 'table',
+  //           alignContent: 'flex-start',
+  //           borderSpacing: '5px'
+  //         }}
+  //       >
+  //         {renderGenres(genres, id, genreMap)}
+  //       </div>
+  //     </div>
+  //   ));
+  // }, [data, renderGenres, genreMap, updateGenreMap]);
 
   return (
     <div className="scan">

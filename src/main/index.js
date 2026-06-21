@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
 import { run, setQuit } from './tags';
 import { dialog } from 'electron';
+import { Worker } from 'node:worker_threads';
 
 function createWindow() {
   // Create the browser window.
@@ -41,15 +42,13 @@ function createWindow() {
   return mainWindow;
 }
 
-const genreMap = new Map();
-
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   let isDialogOpen = false;
 
-  let path = '';
+  let path = 'I:/Music/New Albums/';
 
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron');
@@ -62,11 +61,24 @@ app.whenReady().then(() => {
   });
   const window = createWindow();
 
+  const genreMap = new Map();
+  let folderPaths = [];
+
+  const updateGenreMap = (add, id, genre) => {
+    const albumGenres = genreMap.get(id);
+    if (add) {
+      albumGenres.add(genre);
+    } else {
+      albumGenres.delete(genre);
+    }
+    genreMap.set(id, albumGenres);
+  };
+
   ipcMain.on('start', () => {
     if (path !== '') {
-      run(window.webContents, path + '\\').then(() => {
-        console.log('DONE');
+      run(window.webContents, path).then((response) => {
         window.webContents.send('scan-complete', 'scan complete!');
+        folderPaths = response;
       });
     } else {
       console.log('no folder selected');
@@ -77,17 +89,30 @@ app.whenReady().then(() => {
     setQuit(true);
   });
 
-  ipcMain.on('save', (_event, value) => {
-    console.log('folder here', value);
+  ipcMain.on('update-genre', (_event, value) => {
+    genreMap.set(value.album, value.genres);
+  });
+
+  ipcMain.on('save', () => {
+    console.log('\nSAVE\n');
+
+    new Worker('./src/main/tags.js', {
+      workerData: {
+        folders: folderPaths,
+        genres: genreMap
+      }
+    });
+
+    // worker.saveGenres(folderPaths, genreMap);
+    // saveGenres(folderPaths, genreMap);
+
+    // value.savedGenres.forEach((value, key) => {
+    //   console.log(`m[${key}] = ${value}`);
+    // });
   });
 
   ipcMain.on('genre', (_event, value) => {
-    console.log(value.album, 'will need to', value.remove, value.genre);
-    if (value.remove) {
-      console.log('remove');
-    } else {
-      console.log('add');
-    }
+    updateGenreMap(value.add, value.album, value.genre);
   });
 
   ipcMain.on('open', () => {
