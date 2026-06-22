@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback, FlatList, Text, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import GenreWidget from '../widgets/genreWidget';
 import generateHash from '../../../util/util';
+import React from 'react';
 
 function Running({ onEnd }) {
   const [scanComplete, setScanComplete] = useState(false);
@@ -39,30 +40,6 @@ function Running({ onEnd }) {
     onEnd();
   };
 
-  // const updateGenreMap = useCallback(
-  //   (add, id, genre) => {
-  //     console.log('genreMap', genreMap);
-  //     const currentMap = new Map(genreMap);
-  //     const albumGenres = currentMap.get(id);
-
-  //     console.log('id:', id);
-  //     console.log('before:', albumGenres);
-  //     if (add) {
-  //       console.log('add');
-  //       albumGenres.add(genre);
-  //     } else {
-  //       console.log('remove');
-  //       albumGenres.delete(genre);
-  //     }
-  //     currentMap.set(id, albumGenres);
-  //     console.log(genre, 'in', id);
-  //     console.log('after:', albumGenres);
-  //     setGenreMap(currentMap);
-  //     console.log(currentMap);
-  //   },
-  //   [genreMap]
-  // );
-
   const updateData = useCallback(
     (newData) => {
       let genreArray = [];
@@ -87,90 +64,72 @@ function Running({ onEnd }) {
   );
 
   useEffect(() => {
-    window.test.onReceiveData((input) => {
+    window.test.onSaveComplete((input: any) => {
+      console.log('save complete', input);
+    });
+  }, []);
+
+  useEffect(() => {
+    window.test.onReceiveData((input: any) => {
       updateData(input);
     });
   }, [updateData]);
 
-  window.test.onScanComplete((input) => {
+  window.test.onScanComplete(() => {
     console.log('scan complete');
     setScanComplete(true);
   });
 
   const renderGenres = useCallback((genres, albumID) => {
     return genres.map((g) => (
-      <GenreWidget
-        key={g}
-        title={ltrim(rtrim(g))}
-        onPress={(a) => {
-          ipcHandleGenrePress(albumID, ltrim(rtrim(g)), a);
-        }}
-      />
+      <div key={g}>
+        <GenreWidget
+          title={ltrim(rtrim(g))}
+          onPress={(a) => {
+            ipcHandleGenrePress(albumID, ltrim(rtrim(g)), a);
+          }}
+        />
+      </div>
     ));
   }, []);
 
-  const renderList = useCallback(
-    (map) => {
-      return data.map(({ id, album, genres }) => (
-        // 3. Always assign a unique "key" prop to the outermost list element
+  const renderList = useCallback(() => {
+    return data.map(({ id, album, genres }) => (
+      // 3. Always assign a unique "key" prop to the outermost list element
 
+      <div key={id} className="listRow" style={{}}>
         <div
-          key={id}
+          className="textTwo"
+          key={album}
           style={{
-            display: 'flex',
-            flexDirection: 'row',
-            paddingBottom: '5px',
-            paddingTop: '5px',
-            alignItems: 'center'
+            alignContent: 'center',
+            display: 'table-cell',
+            width: '250px',
+            paddingRight: '10px',
+            minWidth: '250px'
           }}
         >
-          <div className="textTwo" key={album}>
-            <div style={{ width: 250 }}>{album}</div>
-          </div>
+          {album}
+        </div>
+
+        <div
+          style={{
+            display: 'table-cell',
+            alignContent: 'center'
+          }}
+        >
           <div
+            className="genreRow"
             style={{
-              display: 'table',
-              alignContent: 'flex-start',
-              borderSpacing: '5px'
+              display: 'flex'
             }}
           >
-            {renderGenres(genres, id, map)}
+            {renderGenres(genres, id)}
           </div>
         </div>
-      ));
-    },
-    [data, renderGenres]
-  );
-
-  // const renderListfuncton = useMemo(() => {
-  //   return data.map(({ id, album, genres }) => (
-  //     // 3. Always assign a unique "key" prop to the outermost list element
-
-  //     <div
-  //       key={id}
-  //       style={{
-  //         display: 'flex',
-  //         flexDirection: 'row',
-  //         paddingBottom: '5px',
-  //         paddingTop: '5px',
-  //         alignItems: 'center'
-  //       }}
-  //     >
-  //       <div className="textTwo" key={album}>
-  //         <div style={{ width: 250 }}>{album}</div>
-  //       </div>
-  //       <div
-  //         style={{
-  //           display: 'table',
-  //           alignContent: 'flex-start',
-  //           borderSpacing: '5px'
-  //         }}
-  //       >
-  //         {renderGenres(genres, id, genreMap)}
-  //       </div>
-  //     </div>
-  //   ));
-  // }, [data, renderGenres, genreMap, updateGenreMap]);
+      </div>
+    ));
+  }, [data, renderGenres]);
 
   return (
     <div className="scan">
@@ -178,17 +137,18 @@ function Running({ onEnd }) {
 
       <div className="box">
         <div className="container">
-          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'start' }}>
+          <div style={{}}>
             <div
               style={{
                 fontSize: '10px',
                 textAlign: 'center',
-                marginTop: '5px'
+                marginTop: '1em'
               }}
             >
               {scanComplete && 'select genres to keep, or right click to permanently ignore'}
-
-              <div className="list">{renderList()}</div>
+            </div>
+            <div className="list" style={{ display: 'table' }}>
+              {renderList()}
             </div>
           </div>
           {saving && (

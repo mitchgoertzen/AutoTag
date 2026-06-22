@@ -24,6 +24,11 @@ if (process.contextIsolated) {
         // console.log('preload scan');
         ipcRenderer.removeAllListeners('scan-complete');
         ipcRenderer.once('scan-complete', (_event, value) => callback(value));
+      },
+      onSaveComplete: (callback) => {
+        // console.log('preload scan');
+        ipcRenderer.removeAllListeners('save-complete');
+        ipcRenderer.once('save-complete', (_event, value) => callback(value));
       }
     });
     contextBridge.exposeInMainWorld('electron', electronAPI);

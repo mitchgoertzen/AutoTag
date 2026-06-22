@@ -287,7 +287,7 @@ async function getFolders(filepath) {
       } else {
         console.log('Updating', currFolder.name, 'genres to', currentGenres);
         mainWindow.send('recv-album', { album: currFolder.name, genres: currentGenres });
-        mainWindow.send('folder', 'test');
+
         //  folderGenres.push({ album: currFolder.name, genres: currentGenres });
       }
 
@@ -429,7 +429,6 @@ async function saveGenres(folders, genreMap) {
       }
     }
   }
-
   return 'DONE';
 }
 
@@ -440,10 +439,14 @@ function setQuit(value) {
 const main = () => {
   if (workerData) {
     const { folders, genres } = workerData;
+    console.log('mainWindow', mainWindow);
     // console.log('folders', folders);
     // console.log('genres', genres);
     saveGenres(folders, genres).then((response) => {
-      parentPort.postMessage({ response });
+      console.log('return');
+      console.log('parentPort', parentPort);
+      console.log('response', response);
+      parentPort.postMessage('saved', { response });
     });
   }
 };

@@ -32,7 +32,7 @@ function GenreWidget(props: { onPress: (value: boolean) => void; title: string }
   );
 
   return (
-    <div className="genre">
+    <div key={title} className="genre">
       <button
         className="selectable"
         type="button"

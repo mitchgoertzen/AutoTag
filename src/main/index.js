@@ -102,17 +102,14 @@ app.whenReady().then(() => {
         genres: genreMap
       }
     });
-
-    // worker.saveGenres(folderPaths, genreMap);
-    // saveGenres(folderPaths, genreMap);
-
-    // value.savedGenres.forEach((value, key) => {
-    //   console.log(`m[${key}] = ${value}`);
-    // });
   });
 
   ipcMain.on('genre', (_event, value) => {
     updateGenreMap(value.add, value.album, value.genre);
+  });
+
+  ipcMain.on('save-complete', (_event, value) => {
+    console.log('save-complete');
   });
 
   ipcMain.on('open', () => {
