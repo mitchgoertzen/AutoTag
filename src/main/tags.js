@@ -399,7 +399,7 @@ async function* getFiles(filepath) {
 async function saveGenres(folders, genreMap) {
   // console.log('genreMap', genreMap);
   for (const folder of folders) {
-    console.log('folder', folder);
+    //console.log('folder', folder);
     const albumID = generateHash(folder.album);
     // console.log('albumID', albumID);
     const genreMapEntry = genreMap.get(albumID);
@@ -440,8 +440,8 @@ function setQuit(value) {
 const main = () => {
   if (workerData) {
     const { folders, genres } = workerData;
-    console.log('folders', folders);
-    console.log('genres', genres);
+    // console.log('folders', folders);
+    // console.log('genres', genres);
     saveGenres(folders, genres).then((response) => {
       parentPort.postMessage({ response });
     });

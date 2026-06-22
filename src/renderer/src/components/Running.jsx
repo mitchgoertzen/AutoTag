@@ -5,6 +5,7 @@ import generateHash from '../../../util/util';
 function Running({ onEnd }) {
   const [scanComplete, setScanComplete] = useState(false);
 
+  const [saving, setSaving] = useState(false);
   const [data, setData] = useState([]);
 
   // const [genreMap, setGenreMap] = useState(new Map());
@@ -28,6 +29,7 @@ function Running({ onEnd }) {
 
   const handleSave = useCallback(() => {
     console.log('save');
+    setSaving(true);
     // console.log('map', genreMap);
     ipcHandleSave();
   }, []);
@@ -175,23 +177,32 @@ function Running({ onEnd }) {
       <div className="text">{scanComplete ? 'scan complete' : 'scanning...'}</div>
 
       <div className="box">
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'start', flex: 1 }}>
-          <div
-            style={{
-              fontSize: '10px',
-              textAlign: 'center',
-              marginTop: '5px'
-            }}
-          >
-            {scanComplete && 'select genres to keep, or right click to permanently ignore'}
+        <div className="container">
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'start' }}>
+            <div
+              style={{
+                fontSize: '10px',
+                textAlign: 'center',
+                marginTop: '5px'
+              }}
+            >
+              {scanComplete && 'select genres to keep, or right click to permanently ignore'}
+
+              <div className="list">{renderList()}</div>
+            </div>
           </div>
-          <div className="list">{renderList()}</div>
+          {saving && (
+            <div className="item2">
+              <div className="loader" />
+              <div>saving </div>
+            </div>
+          )}
         </div>
       </div>
       <div className="action">
-        <a key={'saveGenres'} target="_blank" rel="noreferrer" onClick={handleSave}>
+        <button type="button" disabled={saving || !scanComplete} onClick={handleSave}>
           Save
-        </a>
+        </button>
       </div>
       <div className="action">
         <a key={'endScan'} target="_blank" rel="noreferrer" onClick={handleQuit}>
