@@ -4,6 +4,7 @@ import * as cheerio from 'cheerio';
 import fs from 'fs';
 import path from 'path';
 import { workerData, parentPort } from 'worker_threads';
+import jsonData from '../data/ignoredGenres.json';
 
 let read = 0;
 let currentAlbum = '';
@@ -17,69 +18,7 @@ let QUIT = false;
 
 const savedGenres = new Map();
 const genreSeparator = ', ';
-const ignoredGenres = new Set([
-  'screamo',
-  'daethmetal',
-  'yes',
-  'all',
-  'cd',
-  'owned',
-  'unitedstates',
-  'oi',
-  'dutch',
-  'british',
-  'london',
-  'irish',
-  'english',
-  'finnish',
-  'japanese',
-  'australian',
-  'german',
-  'germany',
-  'stuttgart',
-  'femalevocalists',
-  'french',
-  'france',
-  'femaleguitarists',
-  'boston',
-  'canadian',
-  'lithuania',
-  'lithuanian',
-  'uk',
-  'scottish',
-  'bostonhardcore',
-  'spotify',
-  'texas',
-  'american',
-  'finland',
-  'norwegian',
-  'england',
-  'russian',
-  'russianalternative',
-  'italy',
-  'italian',
-  'linkinpark',
-  'viewingorganswithhaggleandscrog',
-  'realscreamo',
-  'usa',
-  'sweden',
-  'straightedge',
-  'swedish',
-  'needtorate',
-  'idol',
-  'femalevocalist',
-  'heavy',
-  'kawaiimetal',
-  'indiepop',
-  'drumless',
-  'goodcharlotte',
-  'newrelease',
-  'rezension',
-  'drumless',
-  'crossover',
-  'goodleftundone',
-  'australia'
-]);
+let ignoredGenres;
 
 const count = 9999;
 let index = 0;
@@ -192,41 +131,8 @@ async function getDefaultGenres(filepath) {
 async function run(window, filePath) {
   QUIT = false;
   mainWindow = window;
-  console.log('run');
 
-  // for await (const file of getFiles(filePath)) {
-  //   if (QUIT) {
-  //     console.log('quitting');
-  //     break;
-  //   } else {
-  //     if (file.name !== 'cover.jpg') {
-  //       console.log('file.path', file.path);
-  //       const blob = await openAsBlob(file.path);
-  //       console.log('blob', blob);
-  //       const arrayBuffer = await blob.arrayBuffer();
-  //       const mp3tag = new MP3Tag(arrayBuffer);
-  //       mp3tag.read();
-  //       console.log('mp3tag', mp3tag);
-  //       // if (!savedGenres.get(currentHash)) {
-  //       //   console.log('setting ' + currentHash + ' map entry to ' + mp3tag.tags.v2.TCON);
-  //       //   savedGenres.set(currentHash, mp3tag.tags.v2.TCON);
-  //       // }
-  //       // if (read === 1) {
-  //       //   console.log(mp3tag.tags.v2.TCON);
-  //       // } else {
-  //       //   if (currentGenres.length > 0) {
-  //       //     mp3tag.tags.genre = currentGenres;
-  //       //     mp3tag.save();
-  //       //     fs.writeFileSync(file.path, mp3tag.buffer);
-  //       //   } else {
-  //       //     mp3tag.tags.genre = savedGenres.get(currentHash);
-  //       //     mp3tag.save();
-  //       //     fs.writeFileSync(file.path, mp3tag.buffer);
-  //       //   }
-  //       // }
-  //     }
-  //   }
-  // }
+  ignoredGenres = new Set(jsonData.ignore);
 
   try {
     return await getFolders(filePath);
@@ -439,14 +345,8 @@ function setQuit(value) {
 const main = () => {
   if (workerData) {
     const { folders, genres } = workerData;
-    console.log('mainWindow', mainWindow);
-    // console.log('folders', folders);
-    // console.log('genres', genres);
-    saveGenres(folders, genres).then((response) => {
-      console.log('return');
-      console.log('parentPort', parentPort);
-      console.log('response', response);
-      parentPort.postMessage('saved', { response });
+    saveGenres(folders, genres).then(() => {
+      parentPort.postMessage({ message: 'done :)' });
     });
   }
 };

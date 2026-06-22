@@ -28,6 +28,9 @@ function Running({ onEnd }) {
   const ipcHandleGenrePress = (a, g, r) =>
     window.electron.ipcRenderer.send('genre', { album: a, genre: g, add: r });
 
+  const ipcHandleIgnoreGenre = (i, g) =>
+    window.electron.ipcRenderer.send('ignore', { genre: g, ignore: i });
+
   const handleSave = useCallback(() => {
     console.log('save');
     setSaving(true);
@@ -65,7 +68,8 @@ function Running({ onEnd }) {
 
   useEffect(() => {
     window.test.onSaveComplete((input: any) => {
-      console.log('save complete', input);
+      console.log('ui', input);
+      setSaving(false);
     });
   }, []);
 
@@ -85,6 +89,10 @@ function Running({ onEnd }) {
       <div key={g}>
         <GenreWidget
           title={ltrim(rtrim(g))}
+          onIgnore={(genre, ignore) => {
+            console.log('ignore', genre, 'is', ignore);
+            ipcHandleIgnoreGenre(genre, ignore);
+          }}
           onPress={(a) => {
             ipcHandleGenrePress(albumID, ltrim(rtrim(g)), a);
           }}
@@ -135,30 +143,34 @@ function Running({ onEnd }) {
     <div className="scan">
       <div className="text">{scanComplete ? 'scan complete' : 'scanning...'}</div>
 
-      <div className="box">
-        <div className="container">
-          <div style={{}}>
-            <div
-              style={{
-                fontSize: '10px',
-                textAlign: 'center',
-                marginTop: '1em'
-              }}
-            >
+      <div className="container">
+        {saving && (
+          <div className="item2">
+            <div className="loader" />
+            <div>saving </div>
+          </div>
+        )}
+        <div className="box">
+          <div
+            style={{
+              fontSize: '10px',
+              textAlign: 'center',
+              marginTop: '1em',
+              width: '100%'
+            }}
+          >
+            <div className="centre">
               {scanComplete && 'select genres to keep, or right click to permanently ignore'}
             </div>
             <div className="list" style={{ display: 'table' }}>
               {renderList()}
             </div>
           </div>
-          {saving && (
-            <div className="item2">
-              <div className="loader" />
-              <div>saving </div>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* <div>files saved!</div> */}
+
       <div className="action">
         <button type="button" disabled={saving || !scanComplete} onClick={handleSave}>
           Save

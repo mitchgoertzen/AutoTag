@@ -6,7 +6,7 @@ function Home({ onStart }) {
   const ipcHandleFiles = () => window.electron.ipcRenderer.send('open');
   const ipcHandleStart = () => window.electron.ipcRenderer.send('start');
 
-  const [folder, setFolder] = useState('I:/Music/New Albums/');
+  const [folder, setFolder] = useState('I:/Music/test/');
   const [folderError, setFolderError] = useState(false);
 
   const handleStart = () => {

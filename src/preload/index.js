@@ -28,7 +28,7 @@ if (process.contextIsolated) {
       onSaveComplete: (callback) => {
         // console.log('preload scan');
         ipcRenderer.removeAllListeners('save-complete');
-        ipcRenderer.once('save-complete', (_event, value) => callback(value));
+        ipcRenderer.on('save-complete', (_event, value) => callback(value));
       }
     });
     contextBridge.exposeInMainWorld('electron', electronAPI);

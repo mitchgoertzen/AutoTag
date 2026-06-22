@@ -48,7 +48,7 @@ function createWindow() {
 app.whenReady().then(() => {
   let isDialogOpen = false;
 
-  let path = 'I:/Music/New Albums/';
+  let path = 'I:/Music/test/';
 
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron');
@@ -96,11 +96,16 @@ app.whenReady().then(() => {
   ipcMain.on('save', () => {
     console.log('\nSAVE\n');
 
-    new Worker('./src/main/tags.js', {
+    const worker = new Worker('./src/main/tags.js', {
       workerData: {
         folders: folderPaths,
         genres: genreMap
       }
+    });
+
+    worker.on('message', (result) => {
+      console.log('Received from worker:', result);
+      window.webContents.send('save-complete', 'save complete!');
     });
   });
 
@@ -108,8 +113,8 @@ app.whenReady().then(() => {
     updateGenreMap(value.add, value.album, value.genre);
   });
 
-  ipcMain.on('save-complete', (_event, value) => {
-    console.log('save-complete');
+  ipcMain.on('ignore', (_event, value) => {
+    console.log('ignoring', value.genre, 'on main', value.ignore);
   });
 
   ipcMain.on('open', () => {

@@ -1,8 +1,12 @@
 import React from 'react';
 import { useCallback, useState } from 'react';
 
-function GenreWidget(props: { onPress: (value: boolean) => void; title: string }) {
-  const { onPress, title } = props;
+function GenreWidget(props: {
+  onPress: (value: boolean) => void;
+  title: string;
+  onIgnore: (title: string, ignore: boolean) => void;
+}) {
+  const { onIgnore, onPress, title } = props;
 
   const [active, setActive] = useState(true);
   const [ignored, setIgnored] = useState(false);
@@ -22,10 +26,11 @@ function GenreWidget(props: { onPress: (value: boolean) => void; title: string }
   );
 
   const handleRightClick = useCallback(
-    (isIgnored: boolean) => {
+    (title: string, isIgnored: boolean) => {
       if (active) {
         onPress(!isIgnored);
       }
+      onIgnore(title, isIgnored);
       setIgnored(isIgnored);
     },
     [active, ignored]
@@ -42,7 +47,7 @@ function GenreWidget(props: { onPress: (value: boolean) => void; title: string }
         }}
         onContextMenu={() => {
           console.log('rightclick');
-          handleRightClick(!ignored);
+          handleRightClick(title, !ignored);
         }}
       >
         <div className="textTwo">{title}</div>
