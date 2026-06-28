@@ -106,7 +106,6 @@ code {
   background-color: var(--ev-c-black-soft);
   justify-content: center;
   text-align: center;
-  overflow-y: auto;
 }
 
 .selectable {

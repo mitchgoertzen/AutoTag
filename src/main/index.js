@@ -2,9 +2,12 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
-import { run, setQuit } from './tags';
+import { run, setQuit } from './workers/tags';
 import { dialog } from 'electron';
 import { Worker } from 'node:worker_threads';
+import path from 'path';
+
+import { fileURLToPath } from 'node:url';
 
 function createWindow() {
   // Create the browser window.
@@ -48,7 +51,7 @@ function createWindow() {
 app.whenReady().then(() => {
   let isDialogOpen = false;
 
-  let path = 'I:/Music/test/';
+  let folderPath = '';
 
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron');
@@ -62,6 +65,7 @@ app.whenReady().then(() => {
   const window = createWindow();
 
   const genreMap = new Map();
+  const ignoredGenres = new Set();
   let folderPaths = [];
 
   const updateGenreMap = (add, id, genre) => {
@@ -75,8 +79,8 @@ app.whenReady().then(() => {
   };
 
   ipcMain.on('start', () => {
-    if (path !== '') {
-      run(window.webContents, path).then((response) => {
+    if (folderPath !== '') {
+      run(window.webContents, folderPath, app.getPath('userData')).then((response) => {
         window.webContents.send('scan-complete', 'scan complete!');
         folderPaths = response;
       });
@@ -96,10 +100,15 @@ app.whenReady().then(() => {
   ipcMain.on('save', () => {
     console.log('\nSAVE\n');
 
-    const worker = new Worker('./src/main/tags.js', {
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const workerPath = path.join(__dirname, './worker.js');
+
+    const worker = new Worker(workerPath, {
       workerData: {
         folders: folderPaths,
-        genres: genreMap
+        genres: genreMap,
+        ignored: ignoredGenres,
+        userDataPath: app.getPath('userData')
       }
     });
 
@@ -115,6 +124,12 @@ app.whenReady().then(() => {
 
   ipcMain.on('ignore', (_event, value) => {
     console.log('ignoring', value.genre, 'on main', value.ignore);
+    const genre = value.genre.replaceAll(' ', '').toLowerCase();
+    if (value.ignore) {
+      ignoredGenres.add(genre);
+    } else {
+      ignoredGenres.delete(genre);
+    }
   });
 
   ipcMain.on('open', () => {
@@ -125,8 +140,8 @@ app.whenReady().then(() => {
         console.log('folder returned:', response);
         if (!response.canceled) {
           console.log('start script at:', response.filePaths[0]);
-          path = response.filePaths[0];
-          window.webContents.send('folder-select', path);
+          folderPath = response.filePaths[0] + '\\';
+          window.webContents.send('folder-select', folderPath);
         }
       });
     }

@@ -1,10 +1,10 @@
 import { openAsBlob } from 'node:fs';
 import MP3Tag from 'mp3tag.js';
 import * as cheerio from 'cheerio';
+const { app } = require('electron');
 import fs from 'fs';
 import path from 'path';
 import { workerData, parentPort } from 'worker_threads';
-import jsonData from '../data/ignoredGenres.json';
 
 let read = 0;
 let currentAlbum = '';
@@ -18,7 +18,7 @@ let QUIT = false;
 
 const savedGenres = new Map();
 const genreSeparator = ', ';
-let ignoredGenres;
+let ignoredGenres = new Set();
 
 const count = 9999;
 let index = 0;
@@ -33,17 +33,16 @@ function PascalCase(string) {
 async function loadWebpage(link) {
   let genres = [];
   const tags = await cheerio.fromURL(link).then(($) => {
-    //   console.log('loading', link);
     const $data = $('.tags-list:first').find('li');
 
     let $curr = $data.first();
     for (let i = 0; i < $data.length; i++) {
       let genre = $curr.text();
       var hasNumber = /\d/;
-
       if (!hasNumber.test(genre) && !ignoredGenres.has(genre.replaceAll(' ', ''))) {
         genres.push(PascalCase(genre));
       }
+
       $curr = $curr.next();
     }
     return genres;
@@ -74,7 +73,6 @@ async function getGenres(link) {
 
   while (true) {
     try {
-      console.log('link:', link);
       await loadWebpage(link, {
         lowerCaseTags: true,
         lowerCaseAttributeNames: true
@@ -128,11 +126,25 @@ async function getDefaultGenres(filepath) {
   }
 }
 
-async function run(window, filePath) {
+function loadJsonFile(dataPath) {
+  if (dataPath) {
+    const filePath = path.join(dataPath, 'ignoredGenres.json');
+
+    try {
+      const rawData = fs.readFileSync(filePath, 'utf8');
+      const jsonData = JSON.parse(rawData).ignore;
+      return jsonData;
+    } catch (err) {
+      console.error('Error reading JSON file:', err);
+    }
+  }
+}
+
+async function run(window, filePath, userDataPath) {
   QUIT = false;
   mainWindow = window;
 
-  ignoredGenres = new Set(jsonData.ignore);
+  ignoredGenres = new Set(loadJsonFile(userDataPath));
 
   try {
     return await getFolders(filePath);
@@ -145,7 +157,7 @@ const generateHash = (string) => {
   let hash = 0;
   for (const char of string) {
     hash = (hash << 5) - hash + char.charCodeAt(0);
-    hash |= 0; // Constrain to 32bit integer
+    hash |= 0;
   }
   return hash;
 };
@@ -302,23 +314,33 @@ async function* getFiles(filepath) {
   }
 }
 
-async function saveGenres(folders, genreMap) {
-  // console.log('genreMap', genreMap);
-  for (const folder of folders) {
-    //console.log('folder', folder);
-    const albumID = generateHash(folder.album);
-    // console.log('albumID', albumID);
-    const genreMapEntry = genreMap.get(albumID);
-    //console.log('genreMapEntry', genreMapEntry);
+//TODO: move somehwre with usecallck? store data in main?
+const writeToJSON = (ignored, dataPath) => {
+  const currIgnore = loadJsonFile(dataPath);
+  console.error('currIgnore', currIgnore);
+  const newIgnore = currIgnore ? [...currIgnore, ...ignored] : [...ignored];
+  const newJSON = { ignore: newIgnore };
+  let stringJS = JSON.stringify(newJSON);
 
+  const filePath = path.join(dataPath, 'ignoredGenres.json');
+
+  try {
+    fs.writeFileSync(filePath, stringJS, 'UTF-8', { flags: 'a' });
+  } catch (e) {
+    console.error('Failed to save file:', e);
+  }
+};
+
+async function saveGenres(folders, genreMap, ignored, userDataPath) {
+  for (const folder of folders) {
+    console.log('saving', folder);
+    const albumID = generateHash(folder.album);
+    const genreMapEntry = genreMap.get(albumID);
     if (genreMapEntry !== undefined) {
-      //   console.log('size', genreMapEntry.size);
       if (genreMapEntry.size > 0) {
         const albumGenres = Array.from(genreMapEntry).join(', ');
-        console.log(folder.album, 'genres', albumGenres);
         for await (const file of getFiles(`${folder.path}${folder.album}/`)) {
           if (QUIT) {
-            console.log('quitting');
             break;
           } else {
             if (file.name !== 'cover.jpg') {
@@ -335,6 +357,11 @@ async function saveGenres(folders, genreMap) {
       }
     }
   }
+
+  if (ignored.size > 0) {
+    writeToJSON(ignored, userDataPath);
+  }
+
   return 'DONE';
 }
 
@@ -344,8 +371,8 @@ function setQuit(value) {
 
 const main = () => {
   if (workerData) {
-    const { folders, genres } = workerData;
-    saveGenres(folders, genres).then(() => {
+    const { folders, genres, ignored, userDataPath } = workerData;
+    saveGenres(folders, genres, ignored, userDataPath).then(() => {
       parentPort.postMessage({ message: 'done :)' });
     });
   }

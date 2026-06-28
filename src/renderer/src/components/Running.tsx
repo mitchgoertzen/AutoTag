@@ -28,11 +28,12 @@ function Running({ onEnd }) {
   const ipcHandleGenrePress = (a, g, r) =>
     window.electron.ipcRenderer.send('genre', { album: a, genre: g, add: r });
 
-  const ipcHandleIgnoreGenre = (i, g) =>
+  const ipcHandleIgnoreGenre = (g, i) =>
     window.electron.ipcRenderer.send('ignore', { genre: g, ignore: i });
 
   const handleSave = useCallback(() => {
     console.log('save');
+    //TODO: update genre lists with removed/ignored
     setSaving(true);
     // console.log('map', genreMap);
     ipcHandleSave();
@@ -139,6 +140,7 @@ function Running({ onEnd }) {
     ));
   }, [data, renderGenres]);
 
+  //TODO: add rescan button after first scan?
   return (
     <div className="scan">
       <div className="text">{scanComplete ? 'scan complete' : 'scanning...'}</div>
