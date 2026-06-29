@@ -1,7 +1,6 @@
 import { openAsBlob } from 'node:fs';
 import MP3Tag from 'mp3tag.js';
 import * as cheerio from 'cheerio';
-const { app } = require('electron');
 import fs from 'fs';
 import path from 'path';
 import { workerData, parentPort } from 'worker_threads';
