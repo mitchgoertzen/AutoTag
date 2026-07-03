@@ -3,39 +3,41 @@ import GenreWidget from '../widgets/genreWidget';
 import generateHash from '../../../util/util';
 import React from 'react';
 
+declare global {
+  interface Window {
+    electron: any;
+  }
+}
+
 function Running({ onEnd }) {
-  const [scanComplete, setScanComplete] = useState(false);
+  const [scanComplete, setScanComplete] = useState<boolean>(false);
+  const [saving, setSaving] = useState<boolean>(false);
 
-  const [saving, setSaving] = useState(false);
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<any>([]);
 
-  // const [genreMap, setGenreMap] = useState(new Map());
-
-  function ltrim(str) {
+  function ltrim(str: string) {
     if (!str) return str;
     return str.replace(/^\s+/g, '');
   }
 
-  function rtrim(str) {
+  function rtrim(str: string) {
     if (!str) return str;
     return str.replace(/\s+$/g, '');
   }
 
-  const ipcHandleUpdateGenres = (data) => window.electron.ipcRenderer.send('update-genre', data);
+  const ipcHandleUpdateGenres = (data: any) =>
+    window.electron.ipcRenderer.send('update-genre', data);
   const ipcHandleQuit = () => window.electron.ipcRenderer.send('quit');
   const ipcHandleSave = () => window.electron.ipcRenderer.send('save');
 
-  const ipcHandleGenrePress = (a, g, r) =>
+  const ipcHandleGenrePress = (a: any, g: string, r: boolean) =>
     window.electron.ipcRenderer.send('genre', { album: a, genre: g, add: r });
 
-  const ipcHandleIgnoreGenre = (g, i) =>
+  const ipcHandleIgnoreGenre = (g: string, i: boolean) =>
     window.electron.ipcRenderer.send('ignore', { genre: g, ignore: i });
 
   const handleSave = useCallback(() => {
-    console.log('save');
-    //TODO: update genre lists with removed/ignored
     setSaving(true);
-    // console.log('map', genreMap);
     ipcHandleSave();
   }, []);
 
@@ -45,23 +47,17 @@ function Running({ onEnd }) {
   };
 
   const updateData = useCallback(
-    (newData) => {
+    (newData: any) => {
       let genreArray = [];
-      const currentData = [...data];
+      const currentData: any[] = [...data];
       if (newData.genres) {
         genreArray = newData.genres.split(',');
       }
 
-      // console.log('updateData genreArray', genreArray);
       const formattedArray = genreArray.map((item) => (item[0] === ' ' ? ltrim(item) : item));
-      //  console.log('newData.album', newData.album);
       const id = generateHash(newData.album);
       currentData.push({ id: id, album: newData.album, genres: formattedArray });
-      //   const currentMap = new Map(existingGenres);
       ipcHandleUpdateGenres({ album: id, genres: new Set(formattedArray) });
-      // currentMap.set(id);
-      // setGenreMap(currentMap);
-      // console.log(currentMap);
       setData(currentData);
     },
     [data, setData]
@@ -80,22 +76,23 @@ function Running({ onEnd }) {
     });
   }, [updateData]);
 
-  window.test.onScanComplete(() => {
-    console.log('scan complete');
-    setScanComplete(true);
-  });
+  useEffect(() => {
+    window.test.onScanComplete(() => {
+      console.log('scan complete');
+      setScanComplete(true);
+    });
+  }, []);
 
-  const renderGenres = useCallback((genres, albumID) => {
-    return genres.map((g) => (
-      <div key={g}>
+  const renderGenres = useCallback((genres: string[], albumID) => {
+    return genres.map((currGenre) => (
+      <div key={currGenre}>
         <GenreWidget
-          title={ltrim(rtrim(g))}
+          title={ltrim(rtrim(currGenre))}
           onIgnore={(genre, ignore) => {
-            console.log('ignore', genre, 'is', ignore);
             ipcHandleIgnoreGenre(genre, ignore);
           }}
-          onPress={(a) => {
-            ipcHandleGenrePress(albumID, ltrim(rtrim(g)), a);
+          onPress={(add: boolean) => {
+            ipcHandleGenrePress(albumID, ltrim(rtrim(currGenre)), add);
           }}
         />
       </div>
@@ -104,8 +101,6 @@ function Running({ onEnd }) {
 
   const renderList = useCallback(() => {
     return data.map(({ id, album, genres }) => (
-      // 3. Always assign a unique "key" prop to the outermost list element
-
       <div key={id} className="listRow" style={{}}>
         <div
           className="textTwo"
@@ -140,7 +135,6 @@ function Running({ onEnd }) {
     ));
   }, [data, renderGenres]);
 
-  //TODO: add rescan button after first scan?
   return (
     <div className="scan">
       <div className="text">{scanComplete ? 'scan complete' : 'scanning...'}</div>
@@ -180,7 +174,7 @@ function Running({ onEnd }) {
       </div>
       <div className="action">
         <a key={'endScan'} target="_blank" rel="noreferrer" onClick={handleQuit}>
-          Quit
+          Back
         </a>
       </div>
     </div>

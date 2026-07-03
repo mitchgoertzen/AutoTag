@@ -1,10 +1,10 @@
 {
   "name": "autotag",
-  "version": "1.0.0",
-  "description": "An Electron application with React",
+  "version": "0.1.0",
+  "description": "An application for updating genre tags on music files",
   "main": "./dist/main/index.js",
-  "author": "example.com",
-  "homepage": "https://electron-vite.org",
+  "author": "https://github.com/mitchgoertzen",
+  "homepage": "https://mgoertzen.my.canva.site/",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
@@ -37,6 +37,7 @@
     "@electron-toolkit/eslint-config": "^2.1.0",
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
     "@electron/fuses": "^1.8.0",
+    "@types/react": "^19.2.17",
     "@vitejs/plugin-react": "^5.1.1",
     "electron": "^39.2.6",
     "electron-vite": "^5.0.0",

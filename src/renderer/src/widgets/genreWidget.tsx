@@ -46,7 +46,6 @@ function GenreWidget(props: {
           handleClick(!active);
         }}
         onContextMenu={() => {
-          console.log('rightclick');
           handleRightClick(title, !ignored);
         }}
       >

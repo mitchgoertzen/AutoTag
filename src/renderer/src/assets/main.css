@@ -36,9 +36,6 @@ code {
   width: 100%;
 }
 
-.a {
-}
-
 .info-footer {
   text-decoration: none;
 
@@ -132,19 +129,23 @@ code {
 }
 
 .files {
-  font-size: 16px;
-  color: var(--ev-c-text-1);
-  font-weight: 200;
-  line-height: 32px;
-  text-align: center;
-  width: 300px;
-  justify-content: center;
   border-color: var(--ev-c-white-mute);
-  margin-top: 20px;
   border-style: dashed;
   border-width: 1px;
-  flex-direction: row;
+  color: var(--ev-c-text-1);
   display: flex;
+  flex-direction: row;
+  font-size: 16px;
+  font-weight: 200;
+  justify-content: center;
+  line-height: 32px;
+  margin-top: 20px;
+  max-width: 500px;
+  overflow-wrap: 'break-word';
+  padding-left: 0.5em;
+  padding-right: 1em;
+  padding-top: 0.25em;
+  text-align: center;
 }
 
 .files:hover {
