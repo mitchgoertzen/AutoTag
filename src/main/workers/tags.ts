@@ -4,16 +4,17 @@ import * as cheerio from 'cheerio';
 import fs from 'fs';
 import path from 'path';
 import { workerData, parentPort } from 'worker_threads';
+import { WebContents } from 'electron';
 
 let read = 0;
 let currentAlbum = '';
 let currentArist = '';
 let currentGenres = '';
-let currentHash = '';
+let currentHash = -1;
 
-let mainWindow;
+let mainWindow: WebContents;
 
-let QUIT = false;
+let EXIT_FLAG = false;
 
 const savedGenres = new Map();
 const genreSeparator = ', ';
@@ -22,15 +23,15 @@ let ignoredGenres = new Set();
 const count = 9999;
 let index = 0;
 
-function PascalCase(string) {
-  const newString = string.replace(/(\w)(\w*)/g, function (g0, g1, g2) {
+function PascalCase(input: string): string {
+  const newString = input.replace(/(\w)(\w*)/g, function (g0, g1, g2) {
     return g1.toUpperCase() + g2.toLowerCase();
   });
   return newString;
 }
 
-async function loadWebpage(link) {
-  let genres = [];
+async function loadWebpage(link: string) {
+  let genres: string[] = [];
   const tags = await cheerio.fromURL(link).then(($) => {
     const $data = $('.tags-list:first').find('li');
 
@@ -51,7 +52,7 @@ async function loadWebpage(link) {
 
 //TODO: if more than one hyphen exists, save all version of artist - artist
 //eg. Dinosaur Pile-Up - album
-function parseFolderName(folder) {
+function parseFolderName(folder: string) {
   let artist = '';
 
   let c = folder.slice(0, 1);
@@ -65,17 +66,20 @@ function parseFolderName(folder) {
   currentAlbum = folder.slice(1).trim();
 }
 
-async function getGenres(link) {
-  let result;
+async function getGenres(link: string) {
+  let result = false;
   let pass = false;
   let retryAttempts = 0;
 
   while (true) {
     try {
-      await loadWebpage(link, {
-        lowerCaseTags: true,
-        lowerCaseAttributeNames: true
-      }).then((data) => {
+      await loadWebpage(
+        link
+        //   , {
+        //   lowerCaseTags: true,
+        //   lowerCaseAttributeNames: true
+        // }
+      ).then((data) => {
         currentGenres = '';
         data.sort();
         for (let i = 0; i < data.length; i++) {
@@ -110,7 +114,7 @@ async function getGenres(link) {
   return result;
 }
 
-async function getDefaultGenres(filepath) {
+async function getDefaultGenres(filepath: string) {
   const e = await fs.promises.readdir(filepath, { withFileTypes: true });
 
   for (const file of e) {
@@ -119,13 +123,13 @@ async function getDefaultGenres(filepath) {
       const arrayBuffer = await blob.arrayBuffer();
       const mp3tag = new MP3Tag(arrayBuffer);
       mp3tag.read();
-      savedGenres.set(currentHash, mp3tag.tags.v2.TCON);
+      savedGenres.set(currentHash, mp3tag.tags.v2!!.TCON);
       break;
     }
   }
 }
 
-function loadJsonFile(dataPath) {
+function loadJsonFile(dataPath: string) {
   if (dataPath) {
     const filePath = path.join(dataPath, 'ignoredGenres.json');
 
@@ -139,8 +143,8 @@ function loadJsonFile(dataPath) {
   }
 }
 
-async function run(window, filePath, userDataPath) {
-  QUIT = false;
+async function run(window: WebContents, filePath: string, userDataPath: string) {
+  EXIT_FLAG = false;
   mainWindow = window;
 
   ignoredGenres = new Set(loadJsonFile(userDataPath));
@@ -152,29 +156,27 @@ async function run(window, filePath, userDataPath) {
   }
 }
 
-const generateHash = (string) => {
+const generateHash = (input: string): number => {
   let hash = 0;
-  for (const char of string) {
+  for (const char of input) {
     hash = (hash << 5) - hash + char.charCodeAt(0);
     hash |= 0;
   }
   return hash;
 };
 
-async function getFolders(filepath) {
+async function getFolders(filepath: string) {
   const e = await fs.promises.readdir(filepath, { withFileTypes: true });
-  // console.log('directory', e);
   const folders = e.filter((item) => !/(^|\/)\.[^\/\.]/g.test(item.name));
-  //const folderGenres = [];
   const numFolders = folders.length;
 
-  const folderPaths = [];
-  // console.log('entries', folders);
+  //TODO: data type
+  const folderPaths: any[] = [];
 
+  //TODO: deal with folders insde album (ie: disc 1 disc 2)
   for (let i = 0; i < numFolders; i++) {
     const currFolder = folders[i];
     folderPaths.push({ path: filepath, album: currFolder.name });
-    //TODO: deal with folders insde album (ie: disc 1 disc 2)
 
     if (index++ === count) {
       console.log('quitting at ', count);
@@ -184,84 +186,27 @@ async function getFolders(filepath) {
     const artist = currentArist.replaceAll(' ', '+');
     const album = currentAlbum.replaceAll(' ', '+');
     const link = 'https://www.last.fm/music/' + artist + '/' + album;
-    //  console.log('currFolder.name ', currFolder.name);
     currentHash = generateHash(currFolder.name);
     const success = await getGenres(link).then((result) => {
-      //  console.log('result', result);
       return result;
     });
     if (success) {
       await getDefaultGenres(`${filepath}${currFolder.name}/`);
       if (currentGenres === '') {
-        console.log('Updating', currFolder.name, 'genre to previously saved genre');
-
-        console.log('savedGenres', savedGenres.get(currentHash));
-        //   folderGenres.push({ album: currFolder.name, genres: savedGenres.get(currentHash) });
         mainWindow.send('recv-album', {
           album: currFolder.name,
           genres: savedGenres.get(currentHash)
         });
       } else {
-        console.log('Updating', currFolder.name, 'genres to', currentGenres);
         mainWindow.send('recv-album', { album: currFolder.name, genres: currentGenres });
-
-        //  folderGenres.push({ album: currFolder.name, genres: currentGenres });
       }
-
-      console.log('\n');
     }
-
-    // else if (path.extname(file.name) === '.mp3') {
-    //   yield { ...file, path: filepath + file.name };
-    // }
   }
 
   return folderPaths;
-
-  // for (let i = 0; i < length; i++) {
-  //   const file = entries[i];
-
-  //   console.log('file', file);
-  //   //TODO: deal with folders insde album (ie: disc 1 disc 2)
-  //   if (file.isDirectory()) {
-  //     if (index++ === count) {
-  //       console.log('quitting at ', count);
-  //       break;
-  //     }
-  //     parseFolderName(file.name);
-  //     const artist = currentArist.replaceAll(' ', '+');
-  //     const album = currentAlbum.replaceAll(' ', '+');
-  //     const link = 'https://www.last.fm/music/' + artist + '/' + album;
-  //     currentHash = artist + '' + album;
-  //     const success = await getGenres(link).then((result) => {
-  //       return result;
-  //     });
-  //     if (success) {
-  //       if (currentGenres === '') {
-  //         console.log('Updating', file.name, 'genre to previously saved genre');
-
-  //         //     saveFile(filepath + '' + file.name);
-
-  //         mainWindow.send('recv-album', { album: file.name, genres: savedGenres.get(currentHash) });
-  //       } else {
-  //         console.log('Updating', file.name, 'genres to', currentGenres);
-  //         mainWindow.send('recv-album', { album: file.name, genres: currentGenres });
-  //         mainWindow.send('folder', 'test');
-  //       }
-
-  //       yield* getFiles(`${filepath}${file.name}/`);
-  //       console.log('\n');
-  //     }
-  //   } else if (extraCheck) {
-  //   }
-
-  //   // else if (path.extname(file.name) === '.mp3') {
-  //   //   yield { ...file, path: filepath + file.name };
-  //   // }
-  // }
 }
 
-async function* getFiles(filepath) {
+async function* getFiles(filepath: string) {
   const e = await fs.promises.readdir(filepath, { withFileTypes: true });
 
   const entries = e.filter((item) => !/(^|\/)\.[^\/\.]/g.test(item.name));
@@ -271,42 +216,6 @@ async function* getFiles(filepath) {
   for (let i = 0; i < length; i++) {
     const file = entries[i];
 
-    //TODO: deal with folders insde album (ie: disc 1 disc 2)
-    // if (file.isDirectory()) {
-    //   if (index++ === count) {
-    //     console.log('quitting at ', count);
-    //     break;
-    //   }
-    //   parseFolderName(file.name);
-    //   const artist = currentArist.replaceAll(' ', '+');
-    //   const album = currentAlbum.replaceAll(' ', '+');
-    //   const link = 'https://www.last.fm/music/' + artist + '/' + album;
-    //   currentHash = artist + '' + album;
-    //   const success = await getGenres(link).then((result) => {
-    //     return result;
-    //   });
-    //   if (success) {
-    //     if (currentGenres === '') {
-    //       console.log('Updating', file.name, 'genre to previously saved genre');
-
-    //       //     saveFile(filepath + '' + file.name);
-
-    //       mainWindow.send('recv-album', { album: file.name, genres: savedGenres.get(currentHash) });
-    //     } else {
-    //       console.log('Updating', file.name, 'genres to', currentGenres);
-    //       mainWindow.send('recv-album', { album: file.name, genres: currentGenres });
-    //       mainWindow.send('folder', 'test');
-    //     }
-
-    //     yield* getFiles(`${filepath}${file.name}/`);
-    //     console.log('\n');
-    //   }
-    // } else
-
-    // if (path.extname(file.name) === '.mp3') {
-    //   yield { ...file, path: filepath + file.name };
-    // }
-
     if (path.extname(file.name) === '.mp3') {
       yield { ...file, path: filepath + file.name };
     }
@@ -314,7 +223,7 @@ async function* getFiles(filepath) {
 }
 
 //TODO: move somehwre with usecallck? store data in main?
-const writeToJSON = (ignored, dataPath) => {
+const writeToJSON = (ignored: Set<string>, dataPath: string) => {
   const currIgnore = loadJsonFile(dataPath);
   console.error('currIgnore', currIgnore);
   const newIgnore = currIgnore ? [...currIgnore, ...ignored] : [...ignored];
@@ -324,22 +233,27 @@ const writeToJSON = (ignored, dataPath) => {
   const filePath = path.join(dataPath, 'ignoredGenres.json');
 
   try {
-    fs.writeFileSync(filePath, stringJS, 'UTF-8', { flags: 'a' });
+    fs.writeFileSync(filePath, stringJS, { encoding: 'utf-8', flag: 'a' });
   } catch (e) {
     console.error('Failed to save file:', e);
   }
 };
 
-async function saveGenres(folders, genreMap, ignored, userDataPath) {
+//TODO: folders,genreMap datatypes
+async function saveGenres(
+  folders: any[],
+  genreMap: Map<number, any>,
+  ignored: Set<string>,
+  userDataPath: string
+) {
   for (const folder of folders) {
-    console.log('saving', folder);
     const albumID = generateHash(folder.album);
     const genreMapEntry = genreMap.get(albumID);
     if (genreMapEntry !== undefined) {
       if (genreMapEntry.size > 0) {
         const albumGenres = Array.from(genreMapEntry).join(', ');
         for await (const file of getFiles(`${folder.path}${folder.album}/`)) {
-          if (QUIT) {
+          if (EXIT_FLAG) {
             break;
           } else {
             if (file.name !== 'cover.jpg') {
@@ -349,7 +263,7 @@ async function saveGenres(folders, genreMap, ignored, userDataPath) {
               mp3tag.read();
               mp3tag.tags.genre = albumGenres;
               mp3tag.save();
-              fs.writeFileSync(file.path, mp3tag.buffer);
+              fs.writeFileSync(file.path, mp3tag.buffer as Buffer);
             }
           }
         }
@@ -364,15 +278,15 @@ async function saveGenres(folders, genreMap, ignored, userDataPath) {
   return 'DONE';
 }
 
-function setQuit(value) {
-  QUIT = value;
+function setQuit(value: boolean) {
+  EXIT_FLAG = value;
 }
 
 const main = () => {
   if (workerData) {
     const { folders, genres, ignored, userDataPath } = workerData;
     saveGenres(folders, genres, ignored, userDataPath).then(() => {
-      parentPort.postMessage({ message: 'done :)' });
+      parentPort!!.postMessage({ message: 'done :)' });
     });
   }
 };
@@ -380,3 +294,39 @@ const main = () => {
 main();
 
 export { run, setQuit };
+
+//TODO: deal with folders insde album (ie: disc 1 disc 2)
+// if (file.isDirectory()) {
+//   if (index++ === count) {
+//     console.log('quitting at ', count);
+//     break;
+//   }
+//   parseFolderName(file.name);
+//   const artist = currentArist.replaceAll(' ', '+');
+//   const album = currentAlbum.replaceAll(' ', '+');
+//   const link = 'https://www.last.fm/music/' + artist + '/' + album;
+//   currentHash = artist + '' + album;
+//   const success = await getGenres(link).then((result) => {
+//     return result;
+//   });
+//   if (success) {
+//     if (currentGenres === '') {
+//       console.log('Updating', file.name, 'genre to previously saved genre');
+
+//       //     saveFile(filepath + '' + file.name);
+
+//       mainWindow.send('recv-album', { album: file.name, genres: savedGenres.get(currentHash) });
+//     } else {
+//       console.log('Updating', file.name, 'genres to', currentGenres);
+//       mainWindow.send('recv-album', { album: file.name, genres: currentGenres });
+//       mainWindow.send('folder', 'test');
+//     }
+
+//     yield* getFiles(`${filepath}${file.name}/`);
+//     console.log('\n');
+//   }
+// } else
+
+// if (path.extname(file.name) === '.mp3') {
+//   yield { ...file, path: filepath + file.name };
+// }
