@@ -12,7 +12,7 @@ declare global {
   }
 }
 
-function Home({ onStart }) {
+function HomeScreen({ onStart }) {
   const [selectedFolder, setSelectedFolder] = useState(''); // root folder where albums are stored
   const [folderError, setFolderError] = useState(false); // error status of selected folder (ie. nothing selected)
 
@@ -76,4 +76,4 @@ function Home({ onStart }) {
   );
 }
 
-export default Home;
+export default HomeScreen;

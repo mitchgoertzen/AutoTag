@@ -6,35 +6,44 @@ import React from 'react';
 declare global {
   interface Window {
     electron: any;
+    api: any;
   }
 }
 
-function Running({ onEnd }) {
-  const [scanComplete, setScanComplete] = useState<boolean>(false);
-  const [saving, setSaving] = useState<boolean>(false);
+function AlbumsScreen({ onEnd }) {
+  const [scanComplete, setScanComplete] = useState<boolean>(false); // status of genre check for all albums
+  const [saving, setSaving] = useState<boolean>(false); // saving genres to song files in progress
+  const [scannedAlbums, setScannedAlbums] = useState<any>([]); // currently scanned albums
 
-  const [data, setData] = useState<any>([]);
-
+  // remove white space from start of string
   function ltrim(str: string) {
     if (!str) return str;
     return str.replace(/^\s+/g, '');
   }
 
+  // remove white space from end of string
   function rtrim(str: string) {
     if (!str) return str;
     return str.replace(/\s+$/g, '');
   }
 
+  // callbacks for main thread
   const ipcHandleUpdateGenres = (data: any) =>
     window.electron.ipcRenderer.send('update-genre', data);
-  const ipcHandleQuit = () => window.electron.ipcRenderer.send('quit');
-  const ipcHandleSave = () => window.electron.ipcRenderer.send('save');
 
-  const ipcHandleGenrePress = (a: any, g: string, r: boolean) =>
-    window.electron.ipcRenderer.send('genre', { album: a, genre: g, add: r });
+  const ipcHandleQuit = () => window.electron.ipcRenderer.send('quit-scan');
 
-  const ipcHandleIgnoreGenre = (g: string, i: boolean) =>
-    window.electron.ipcRenderer.send('ignore', { genre: g, ignore: i });
+  const ipcHandleSave = () => window.electron.ipcRenderer.send('save-genres');
+
+  const ipcHandleGenreKeep = (respectiveAlbum: any, selectedGenre: string, willKeep: boolean) =>
+    window.electron.ipcRenderer.send('keep-genre', {
+      album: respectiveAlbum,
+      genre: selectedGenre,
+      keep: willKeep
+    });
+
+  const ipcHandleIgnoreGenre = (selectedGenre: string, willIgnore: boolean) =>
+    window.electron.ipcRenderer.send('ignore-genre', { genre: selectedGenre, ignore: willIgnore });
 
   const handleSave = useCallback(() => {
     setSaving(true);
@@ -49,7 +58,7 @@ function Running({ onEnd }) {
   const updateData = useCallback(
     (newData: any) => {
       let genreArray = [];
-      const currentData: any[] = [...data];
+      const currentData: any[] = [...scannedAlbums];
       if (newData.genres) {
         genreArray = newData.genres.split(',');
       }
@@ -58,26 +67,26 @@ function Running({ onEnd }) {
       const id = generateHash(newData.album);
       currentData.push({ id: id, album: newData.album, genres: formattedArray });
       ipcHandleUpdateGenres({ album: id, genres: new Set(formattedArray) });
-      setData(currentData);
+      setScannedAlbums(currentData);
     },
-    [data, setData]
+    [scannedAlbums, setScannedAlbums]
   );
 
   useEffect(() => {
-    window.test.onSaveComplete((input: any) => {
+    window.api.onSaveComplete((input: any) => {
       console.log('ui', input);
       setSaving(false);
     });
   }, []);
 
   useEffect(() => {
-    window.test.onReceiveData((input: any) => {
+    window.api.onReceiveData((input: any) => {
       updateData(input);
     });
   }, [updateData]);
 
   useEffect(() => {
-    window.test.onScanComplete(() => {
+    window.api.onScanComplete(() => {
       console.log('scan complete');
       setScanComplete(true);
     });
@@ -88,11 +97,11 @@ function Running({ onEnd }) {
       <div key={currGenre}>
         <GenreWidget
           title={ltrim(rtrim(currGenre))}
-          onIgnore={(genre, ignore) => {
+          onToggleIgnore={(genre, ignore) => {
             ipcHandleIgnoreGenre(genre, ignore);
           }}
-          onPress={(add: boolean) => {
-            ipcHandleGenrePress(albumID, ltrim(rtrim(currGenre)), add);
+          onToggleKeep={(add: boolean) => {
+            ipcHandleGenreKeep(albumID, ltrim(rtrim(currGenre)), add);
           }}
         />
       </div>
@@ -100,7 +109,7 @@ function Running({ onEnd }) {
   }, []);
 
   const renderList = useCallback(() => {
-    return data.map(({ id, album, genres }) => (
+    return scannedAlbums.map(({ id, album, genres }) => (
       <div key={id} className="listRow" style={{}}>
         <div
           className="textTwo"
@@ -133,7 +142,7 @@ function Running({ onEnd }) {
         </div>
       </div>
     ));
-  }, [data, renderGenres]);
+  }, [scannedAlbums, renderGenres]);
 
   return (
     <div className="scan">
@@ -181,4 +190,4 @@ function Running({ onEnd }) {
   );
 }
 
-export default Running;
+export default AlbumsScreen;
