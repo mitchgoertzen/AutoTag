@@ -126,9 +126,9 @@ async function getGenres(link: string) {
 }
 
 async function getDefaultGenres(filepath: string) {
-  const e = await fs.promises.readdir(filepath, { withFileTypes: true });
+  const dir = await fs.promises.readdir(filepath, { withFileTypes: true });
 
-  for (const file of e) {
+  for (const file of dir) {
     if (path.extname(file.name) === '.mp3') {
       const blob = await openAsBlob(filepath + file.name);
       const arrayBuffer = await blob.arrayBuffer();
@@ -168,8 +168,8 @@ async function run(window: WebContents, filePath: string, userDataPath: string) 
 }
 
 async function getFolders(filepath: string) {
-  const e = await fs.promises.readdir(filepath, { withFileTypes: true });
-  const folders = e.filter((item) => !/(^|\/)\.[^\/\.]/g.test(item.name));
+  const dir = await fs.promises.readdir(filepath, { withFileTypes: true });
+  const folders = dir.filter((item) => !/(^|\/)\.[^\/\.]/g.test(item.name));
   const numFolders = folders.length;
 
   //TODO: data type

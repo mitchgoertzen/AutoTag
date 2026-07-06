@@ -32,16 +32,15 @@ function HomeScreen({ onStart }) {
     } else {
       setFolderError(true); // folder name is empty, show error
     }
-  }, []);
+  }, [selectedFolder]);
 
-  // receive messages to main thread
-  useEffect(() => {
-    // when new folder is selected on main thread, update ui
-    window.api.onFolderSelected((input: string) => {
-      setFolderError(false);
-      handleFolderSelect(input);
-    });
-  }, []);
+  // ** receive messages to main thread **
+
+  // when new folder is selected on main thread, update ui
+  window.api.onFolderSelected((input: string) => {
+    setFolderError(false);
+    handleFolderSelect(input);
+  });
 
   return (
     <>
@@ -63,11 +62,24 @@ function HomeScreen({ onStart }) {
             </a>
           </div>
         </div>
-        <a className="files" target="_blank" rel="noreferrer" onClick={ipcHandleFiles}>
-          <div style={{ alignSelf: 'center', justifyContent: 'center' }}>
+        <a className="folder" target="_blank" rel="noreferrer" onClick={ipcHandleFiles}>
+          <div
+            style={{
+              height: '30px',
+              alignSelf: 'center',
+              justifyContent: 'center'
+            }}
+          >
             <img src={icon} className="icon" />
           </div>
-          <div>{selectedFolder !== '' ? selectedFolder : 'choose album folder'}</div>
+          <div
+            style={{
+              alignSelf: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            {selectedFolder !== '' ? selectedFolder : 'choose album folder'}
+          </div>
         </a>
         {folderError && <div style={{ color: 'red', fontSize: 12 }}>no folder selected</div>}
         <Footer />
