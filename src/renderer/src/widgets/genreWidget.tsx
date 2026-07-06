@@ -12,14 +12,14 @@ function GenreWidget(props: {
   const [keep, setKeep] = useState(true); //status of genre being kept for album
   const [ignore, setIgnore] = useState(false); //status of genre being permanently ignored in future scanns
 
-  //toggle keep genre for corresponding album
+  // toggle keep genre for corresponding album
   const handleClick = useCallback(
     (isActive: boolean) => {
-      //if genre is ignored:
+      // if genre is ignored:
       if (ignore) {
         onToggleKeep(true); // execute parent callback
         setKeep(true); // add genre to album
-        setIgnore(false); //remove ignore status
+        setIgnore(false); // remove ignore status
       } else {
         onToggleKeep(isActive); // execute parent callback with new keep status
         setKeep(isActive); // update state keep status
@@ -28,10 +28,10 @@ function GenreWidget(props: {
     [keep, ignore]
   );
 
-  //toggle add genre to ignore list
+  // toggle add genre to ignore list
   const handleRightClick = useCallback(
     (title: string, isIgnored: boolean) => {
-      //if album is currently being kept:
+      // if album is currently being kept:
       if (keep) {
         onToggleKeep(!isIgnored); // execute parent callback with reverse of ignore status
       }

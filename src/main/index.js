@@ -49,10 +49,6 @@ function createWindow() {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  let isDialogOpen = false;
-
-  let folderPath = '';
-
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron');
 
@@ -62,11 +58,13 @@ app.whenReady().then(() => {
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window);
   });
-  const window = createWindow();
 
+  const window = createWindow();
   const genreMap = new Map();
   const ignoredGenres = new Set();
   let folderPaths = [];
+  let folderPath = '';
+  let isDialogOpen = false;
 
   const updateGenreMap = (add, id, genre) => {
     const albumGenres = genreMap.get(id);
@@ -78,7 +76,65 @@ app.whenReady().then(() => {
     genreMap.set(id, albumGenres);
   };
 
-  ipcMain.on('start', () => {
+  // messages received from render thread
+
+  // add/remove genre from ignore list
+  ipcMain.on('ignore-genre', (_event, value) => {
+    const genre = value.genre.replaceAll(' ', '').toLowerCase();
+    if (value.ignore) {
+      ignoredGenres.add(genre);
+    } else {
+      ignoredGenres.delete(genre);
+    }
+  });
+
+  // add/remove genre from list of respective album
+  ipcMain.on('keep-genre', (_event, value) => {
+    updateGenreMap(value.keep, value.album, value.genre);
+  });
+
+  // one OS file browser to select folder for scan
+  ipcMain.on('open-file-browser', () => {
+    if (!isDialogOpen) {
+      isDialogOpen = true;
+      dialog.showOpenDialog({ properties: ['openDirectory'] }).then((response) => {
+        isDialogOpen = false;
+        if (!response.canceled) {
+          folderPath = response.filePaths[0] + '\\';
+          window.webContents.send('folder-select', folderPath);
+        }
+      });
+    }
+  });
+
+  // end scan, or go back to main screen
+  ipcMain.on('quit-scan', () => {
+    setQuit(true);
+  });
+
+  // start file save with new genres
+  ipcMain.on('save-genres', () => {
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const workerPath = path.join(__dirname, './worker.js');
+
+    // to avoid freezing ui, create worker object to handle saving genres on separate thread
+    const worker = new Worker(workerPath, {
+      workerData: {
+        folders: folderPaths, // direct path from root to each album folder
+        genres: genreMap, // albums and their respective genres
+        ignored: ignoredGenres, // new genres to ignore
+        userDataPath: app.getPath('userData') // root folder for user files
+      }
+    });
+
+    worker.on('message', (result) => {
+      console.log('Received from worker:', result);
+      window.webContents.send('save-complete', 'save complete!');
+    });
+  });
+
+  // begin scanning albums in selected folder
+  ipcMain.on('start-scan', () => {
     if (folderPath !== '') {
       run(window.webContents, folderPath, app.getPath('userData')).then((response) => {
         window.webContents.send('scan-complete', 'scan complete!');
@@ -89,74 +145,16 @@ app.whenReady().then(() => {
     }
   });
 
-  ipcMain.on('quit', () => {
-    setQuit(true);
-  });
-
+  // during scan, update genres stored for respective album
   ipcMain.on('update-genre', (_event, value) => {
     genreMap.set(value.album, value.genres);
   });
 
-  ipcMain.on('save', () => {
-    console.log('\nSAVE\n');
-
-    const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const workerPath = path.join(__dirname, './worker.js');
-
-    const worker = new Worker(workerPath, {
-      workerData: {
-        folders: folderPaths,
-        genres: genreMap,
-        ignored: ignoredGenres,
-        userDataPath: app.getPath('userData')
-      }
-    });
-
-    worker.on('message', (result) => {
-      console.log('Received from worker:', result);
-      window.webContents.send('save-complete', 'save complete!');
-    });
-  });
-
-  ipcMain.on('genre', (_event, value) => {
-    updateGenreMap(value.add, value.album, value.genre);
-  });
-
-  ipcMain.on('ignore', (_event, value) => {
-    console.log('ignoring', value.genre, 'on main', value.ignore);
-    const genre = value.genre.replaceAll(' ', '').toLowerCase();
-    if (value.ignore) {
-      ignoredGenres.add(genre);
-    } else {
-      ignoredGenres.delete(genre);
-    }
-  });
-
-  ipcMain.on('open', () => {
-    if (!isDialogOpen) {
-      isDialogOpen = true;
-      dialog.showOpenDialog({ properties: ['openDirectory'] }).then((response) => {
-        isDialogOpen = false;
-        console.log('folder returned:', response);
-        if (!response.canceled) {
-          console.log('start script at:', response.filePaths[0]);
-          folderPath = response.filePaths[0] + '\\';
-          window.webContents.send('folder-select', folderPath);
-        }
-      });
-    }
-  });
-
   app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
