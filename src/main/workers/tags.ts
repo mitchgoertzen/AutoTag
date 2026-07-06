@@ -23,26 +23,40 @@ let ignoredGenres = new Set();
 const count = 9999;
 let index = 0;
 
-function PascalCase(input: string): string {
+const generateHash = (input: string): number => {
+  let hash = 0;
+  for (const char of input) {
+    hash = (hash << 5) - hash + char.charCodeAt(0);
+    hash |= 0;
+  }
+  return hash;
+};
+// convert given string to PascalCase
+const pascalCase = (input: string): string => {
   const newString = input.replace(/(\w)(\w*)/g, function (g0, g1, g2) {
     return g1.toUpperCase() + g2.toLowerCase();
   });
   return newString;
-}
+};
 
+// load data from given last.fm link using cheerio
 async function loadWebpage(link: string) {
   let genres: string[] = [];
   const tags = await cheerio.fromURL(link).then(($) => {
+    // select element where albums tags are stored
     const $data = $('.tags-list:first').find('li');
 
+    // select iterator at beginning of tags list
     let $curr = $data.first();
     for (let i = 0; i < $data.length; i++) {
       let genre = $curr.text();
       var hasNumber = /\d/;
+      // if tag name is not a number AND is not in ignore list,
       if (!hasNumber.test(genre) && !ignoredGenres.has(genre.replaceAll(' ', ''))) {
-        genres.push(PascalCase(genre));
+        // convert to pascal case
+        genres.push(pascalCase(genre));
       }
-
+      // continue iterating through tags
       $curr = $curr.next();
     }
     return genres;
@@ -50,8 +64,9 @@ async function loadWebpage(link: string) {
   return tags;
 }
 
-//TODO: if more than one hyphen exists, save all version of artist - artist
-//eg. Dinosaur Pile-Up - album
+//TODO: if more than one hyphen exists, save all version of artist - artist (eg. Dinosaur Pile-Up - albumname)
+
+// separate folder name into album and artist (only works for one format currently: 'Artist - Album')
 function parseFolderName(folder: string) {
   let artist = '';
 
@@ -94,9 +109,6 @@ async function getGenres(link: string) {
       });
     } catch (e) {
       retryAttempts++;
-      console.log('input:', e.input);
-      console.log('FAILED');
-      console.log('retrying...');
       const newLink = e.input;
       if (newLink !== undefined) {
         link = 'https://www.last.fm' + e.input;
@@ -106,7 +118,6 @@ async function getGenres(link: string) {
     }
 
     if (pass || retryAttempts > 1) {
-      //    console.log('done');
       break;
     }
   }
@@ -152,18 +163,9 @@ async function run(window: WebContents, filePath: string, userDataPath: string) 
   try {
     return await getFolders(filePath);
   } catch (e) {
-    console.log('e', e);
+    console.error('e', e);
   }
 }
-
-const generateHash = (input: string): number => {
-  let hash = 0;
-  for (const char of input) {
-    hash = (hash << 5) - hash + char.charCodeAt(0);
-    hash |= 0;
-  }
-  return hash;
-};
 
 async function getFolders(filepath: string) {
   const e = await fs.promises.readdir(filepath, { withFileTypes: true });
@@ -179,7 +181,6 @@ async function getFolders(filepath: string) {
     folderPaths.push({ path: filepath, album: currFolder.name });
 
     if (index++ === count) {
-      console.log('quitting at ', count);
       break;
     }
     parseFolderName(currFolder.name);
@@ -194,11 +195,11 @@ async function getFolders(filepath: string) {
       await getDefaultGenres(`${filepath}${currFolder.name}/`);
       if (currentGenres === '') {
         mainWindow.send('recv-album', {
-          album: currFolder.name,
+          title: currFolder.name,
           genres: savedGenres.get(currentHash)
         });
       } else {
-        mainWindow.send('recv-album', { album: currFolder.name, genres: currentGenres });
+        mainWindow.send('recv-album', { title: currFolder.name, genres: currentGenres });
       }
     }
   }
@@ -206,34 +207,38 @@ async function getFolders(filepath: string) {
   return folderPaths;
 }
 
+//generator function to retrieve files in given folder
 async function* getFiles(filepath: string) {
-  const e = await fs.promises.readdir(filepath, { withFileTypes: true });
-
-  const entries = e.filter((item) => !/(^|\/)\.[^\/\.]/g.test(item.name));
-
+  // load directory of given folder
+  const dir = await fs.promises.readdir(filepath, { withFileTypes: true });
+  // create list of only file names
+  const entries = dir.filter((file) => !/(^|\/)\.[^\/\.]/g.test(file.name));
   const length = entries.length;
 
   for (let i = 0; i < length; i++) {
-    const file = entries[i];
-
-    if (path.extname(file.name) === '.mp3') {
-      yield { ...file, path: filepath + file.name };
+    const currentFile = entries[i];
+    // only return files of type mp3 (more filetypes to be supported later)
+    if (path.extname(currentFile.name) === '.mp3') {
+      yield { ...currentFile, path: filepath + currentFile.name };
     }
   }
 }
 
-//TODO: move somehwre with usecallck? store data in main?
 const writeToJSON = (ignored: Set<string>, dataPath: string) => {
+  //get file path for existing ignored list
+  const filePath = path.join(dataPath, 'ignoredGenres.json');
+  // get current ignore list from json file in user data
   const currIgnore = loadJsonFile(dataPath);
-  console.error('currIgnore', currIgnore);
+  // merge incoming and current ignore lists
   const newIgnore = currIgnore ? [...currIgnore, ...ignored] : [...ignored];
+
+  //convert new ignore list to JSON format
   const newJSON = { ignore: newIgnore };
   let stringJS = JSON.stringify(newJSON);
 
-  const filePath = path.join(dataPath, 'ignoredGenres.json');
-
   try {
-    fs.writeFileSync(filePath, stringJS, { encoding: 'utf-8', flag: 'a' });
+    // overwrite ignore list with update values
+    fs.writeFileSync(filePath, stringJS, { encoding: 'utf-8', flag: 'w' });
   } catch (e) {
     console.error('Failed to save file:', e);
   }
