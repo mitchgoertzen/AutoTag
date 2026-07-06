@@ -128,7 +128,7 @@ code {
   overflow-x: auto;
 }
 
-.files {
+.folder {
   border-color: var(--ev-c-white-mute);
   border-style: dashed;
   border-width: 1px;
@@ -144,14 +144,15 @@ code {
   overflow-wrap: 'break-word';
   padding-left: 0.5em;
   padding-right: 1em;
+  padding-bottom: 0.25em;
   padding-top: 0.25em;
   text-align: center;
 }
 
-.files:hover {
+.folder:hover {
   border-color: var(--ev-c-green-1);
 }
-.files:active {
+.folder:active {
   opacity: 0.7;
   color: var(--ev-button-alt-border);
 }
@@ -269,7 +270,7 @@ code {
   color: var(--ev-c-gray-3);
 }
 
-.versions {
+.footer {
   position: absolute;
   bottom: 30px;
   margin: 0 auto;
@@ -282,7 +283,7 @@ code {
   backdrop-filter: blur(24px);
 }
 
-.versions li {
+.footer li {
   display: block;
   float: left;
   border-right: 1px solid var(--ev-c-gray-1);
@@ -321,7 +322,7 @@ code {
 }
 
 @media (max-width: 620px) {
-  .versions {
+  .footer {
     display: none;
   }
 }

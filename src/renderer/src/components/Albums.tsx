@@ -6,105 +6,113 @@ import React from 'react';
 declare global {
   interface Window {
     electron: any;
+    api: any;
   }
 }
 
-function Running({ onEnd }) {
-  const [scanComplete, setScanComplete] = useState<boolean>(false);
-  const [saving, setSaving] = useState<boolean>(false);
+function AlbumsScreen({ onEnd }) {
+  const [scanComplete, setScanComplete] = useState<boolean>(false); // status of genre check for all albums
+  const [saving, setSaving] = useState<boolean>(false); // saving genres to song files in progress
+  const [scannedAlbums, setScannedAlbums] = useState<any>([]); // currently scanned albums
 
-  const [data, setData] = useState<any>([]);
-
+  // remove white space from start of string
   function ltrim(str: string) {
     if (!str) return str;
     return str.replace(/^\s+/g, '');
   }
 
+  // remove white space from end of string
   function rtrim(str: string) {
     if (!str) return str;
     return str.replace(/\s+$/g, '');
   }
 
+  // callbacks for main thread
   const ipcHandleUpdateGenres = (data: any) =>
     window.electron.ipcRenderer.send('update-genre', data);
-  const ipcHandleQuit = () => window.electron.ipcRenderer.send('quit');
-  const ipcHandleSave = () => window.electron.ipcRenderer.send('save');
 
-  const ipcHandleGenrePress = (a: any, g: string, r: boolean) =>
-    window.electron.ipcRenderer.send('genre', { album: a, genre: g, add: r });
+  const ipcHandleQuit = () => window.electron.ipcRenderer.send('quit-scan');
 
-  const ipcHandleIgnoreGenre = (g: string, i: boolean) =>
-    window.electron.ipcRenderer.send('ignore', { genre: g, ignore: i });
+  const ipcHandleSave = () => window.electron.ipcRenderer.send('save-genres');
 
-  const handleSave = useCallback(() => {
-    setSaving(true);
-    ipcHandleSave();
-  }, []);
+  const ipcHandleGenreKeep = (respectiveAlbum: any, selectedGenre: string, willKeep: boolean) =>
+    window.electron.ipcRenderer.send('keep-genre', {
+      album: respectiveAlbum,
+      genre: selectedGenre,
+      keep: willKeep
+    });
+
+  const ipcHandleIgnoreGenre = (selectedGenre: string, willIgnore: boolean) =>
+    window.electron.ipcRenderer.send('ignore-genre', { genre: selectedGenre, ignore: willIgnore });
 
   const handleQuit = () => {
     ipcHandleQuit();
     onEnd();
   };
 
-  const updateData = useCallback(
-    (newData: any) => {
-      let genreArray = [];
-      const currentData: any[] = [...data];
-      if (newData.genres) {
-        genreArray = newData.genres.split(',');
-      }
+  const handleSave = useCallback(() => {
+    setSaving(true);
+    ipcHandleSave();
+  }, []);
 
+  const updateAlbums = useCallback(
+    (album: any) => {
+      const currentAlbums: any[] = [...scannedAlbums];
+      let genreArray = [];
+      if (album.genres) {
+        genreArray = album.genres.split(',');
+      }
+      //create id has for album
+      const id = generateHash(album.title);
+      // remove any whitespace from start of genre title
       const formattedArray = genreArray.map((item) => (item[0] === ' ' ? ltrim(item) : item));
-      const id = generateHash(newData.album);
-      currentData.push({ id: id, album: newData.album, genres: formattedArray });
+      currentAlbums.push({ id: id, title: album.title, genres: formattedArray });
       ipcHandleUpdateGenres({ album: id, genres: new Set(formattedArray) });
-      setData(currentData);
+      setScannedAlbums(currentAlbums);
     },
-    [data, setData]
+    [scannedAlbums, setScannedAlbums]
   );
 
   useEffect(() => {
-    window.test.onSaveComplete((input: any) => {
-      console.log('ui', input);
-      setSaving(false);
-    });
-  }, []);
-
-  useEffect(() => {
-    window.test.onReceiveData((input: any) => {
-      updateData(input);
-    });
-  }, [updateData]);
-
-  useEffect(() => {
-    window.test.onScanComplete(() => {
-      console.log('scan complete');
+    window.api.onScanComplete(() => {
       setScanComplete(true);
     });
   }, []);
 
-  const renderGenres = useCallback((genres: string[], albumID) => {
+  useEffect(() => {
+    window.api.onReceiveAlbum((input: any) => {
+      updateAlbums(input);
+    });
+  }, [updateAlbums]);
+
+  useEffect(() => {
+    window.api.onSaveComplete(() => {
+      setSaving(false);
+    });
+  }, []);
+
+  const renderGenres = useCallback((genres: string[], albumID: number) => {
     return genres.map((currGenre) => (
       <div key={currGenre}>
         <GenreWidget
           title={ltrim(rtrim(currGenre))}
-          onIgnore={(genre, ignore) => {
+          onToggleIgnore={(genre, ignore) => {
             ipcHandleIgnoreGenre(genre, ignore);
           }}
-          onPress={(add: boolean) => {
-            ipcHandleGenrePress(albumID, ltrim(rtrim(currGenre)), add);
+          onToggleKeep={(add: boolean) => {
+            ipcHandleGenreKeep(albumID, ltrim(rtrim(currGenre)), add);
           }}
         />
       </div>
     ));
   }, []);
 
-  const renderList = useCallback(() => {
-    return data.map(({ id, album, genres }) => (
+  const renderAlbums = useCallback(() => {
+    return scannedAlbums.map(({ id, title, genres }) => (
       <div key={id} className="listRow" style={{}}>
         <div
           className="textTwo"
-          key={album}
+          key={id}
           style={{
             alignContent: 'center',
             display: 'table-cell',
@@ -113,7 +121,7 @@ function Running({ onEnd }) {
             minWidth: '250px'
           }}
         >
-          {album}
+          {title}
         </div>
 
         <div
@@ -133,7 +141,7 @@ function Running({ onEnd }) {
         </div>
       </div>
     ));
-  }, [data, renderGenres]);
+  }, [scannedAlbums, renderGenres]);
 
   return (
     <div className="scan">
@@ -159,14 +167,11 @@ function Running({ onEnd }) {
               {scanComplete && 'select genres to keep, or right click to permanently ignore'}
             </div>
             <div className="list" style={{ display: 'table' }}>
-              {renderList()}
+              {renderAlbums()}
             </div>
           </div>
         </div>
       </div>
-
-      {/* <div>files saved!</div> */}
-
       <div className="action">
         <button type="button" disabled={saving || !scanComplete} onClick={handleSave}>
           Save
@@ -181,4 +186,4 @@ function Running({ onEnd }) {
   );
 }
 
-export default Running;
+export default AlbumsScreen;

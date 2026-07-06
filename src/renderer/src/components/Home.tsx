@@ -1,4 +1,4 @@
-import Versions from './Versions';
+import Footer from './Footer';
 import { useCallback, useEffect, useState } from 'react';
 import React from 'react';
 
@@ -8,31 +8,36 @@ import icon from './../../../../resources/folder.png?asset';
 declare global {
   interface Window {
     electron: any;
-    test: any;
+    api: any;
   }
 }
 
-function Home({ onStart }) {
-  const ipcHandleFiles = () => window.electron.ipcRenderer.send('open');
-  const ipcHandleStart = () => window.electron.ipcRenderer.send('start');
+function HomeScreen({ onStart }) {
+  const [selectedFolder, setSelectedFolder] = useState(''); // root folder where albums are stored
+  const [folderError, setFolderError] = useState(false); // error status of selected folder (ie. nothing selected)
 
-  const [folder, setFolder] = useState('');
-  const [folderError, setFolderError] = useState(false);
+  // send messages to main thread
+  const ipcHandleFiles = () => window.electron.ipcRenderer.send('open-file-browser');
+  const ipcHandleStart = () => window.electron.ipcRenderer.send('start-scan');
 
-  const handleStart = () => {
-    if (folder !== '') {
-      onStart();
-      ipcHandleStart();
-    } else {
-      setFolderError(true);
-    }
-  };
-
-  const handleFolderSelect = useCallback((newFolder) => {
-    setFolder(newFolder);
+  const handleFolderSelect = useCallback((newFolder: string) => {
+    setSelectedFolder(newFolder);
   }, []);
 
-  window.test.onFolderSelected((input: string) => {
+  // begin folder scan
+  const handleStart = useCallback(() => {
+    if (selectedFolder !== '') {
+      onStart(); // execute parent callback
+      ipcHandleStart(); // send message to main thread
+    } else {
+      setFolderError(true); // folder name is empty, show error
+    }
+  }, [selectedFolder]);
+
+  // ** receive messages to main thread **
+
+  // when new folder is selected on main thread, update ui
+  window.api.onFolderSelected((input: string) => {
     setFolderError(false);
     handleFolderSelect(input);
   });
@@ -57,17 +62,30 @@ function Home({ onStart }) {
             </a>
           </div>
         </div>
-        <a className="files" target="_blank" rel="noreferrer" onClick={ipcHandleFiles}>
-          <div style={{ alignSelf: 'center', justifyContent: 'center' }}>
+        <a className="folder" target="_blank" rel="noreferrer" onClick={ipcHandleFiles}>
+          <div
+            style={{
+              height: '30px',
+              alignSelf: 'center',
+              justifyContent: 'center'
+            }}
+          >
             <img src={icon} className="icon" />
           </div>
-          <div>{folder !== '' ? folder : 'choose album folder'}</div>
+          <div
+            style={{
+              alignSelf: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            {selectedFolder !== '' ? selectedFolder : 'choose album folder'}
+          </div>
         </a>
         {folderError && <div style={{ color: 'red', fontSize: 12 }}>no folder selected</div>}
-        <Versions />
+        <Footer />
       </div>
     </>
   );
 }
 
-export default Home;
+export default HomeScreen;

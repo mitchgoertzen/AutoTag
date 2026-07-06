@@ -2,38 +2,43 @@ import React from 'react';
 import { useCallback, useState } from 'react';
 
 function GenreWidget(props: {
-  onPress: (value: boolean) => void;
-  title: string;
-  onIgnore: (title: string, ignore: boolean) => void;
+  onToggleKeep: (value: boolean) => void; // handle keep status on main thread
+  onToggleIgnore: (title: string, ignore: boolean) => void; // handle ignore status on main thread
+
+  title: string; // name of genre
 }) {
-  const { onIgnore, onPress, title } = props;
+  const { onToggleIgnore, onToggleKeep, title } = props;
 
-  const [active, setActive] = useState(true);
-  const [ignored, setIgnored] = useState(false);
+  const [keep, setKeep] = useState(true); //status of genre being kept for album
+  const [ignore, setIgnore] = useState(false); //status of genre being permanently ignored in future scanns
 
+  // toggle keep genre for corresponding album
   const handleClick = useCallback(
     (isActive: boolean) => {
-      if (ignored) {
-        setActive(true);
-        setIgnored(false);
-        onPress(true);
+      // if genre is ignored:
+      if (ignore) {
+        onToggleKeep(true); // execute parent callback
+        setKeep(true); // add genre to album
+        setIgnore(false); // remove ignore status
       } else {
-        setActive(isActive);
-        onPress(isActive);
+        onToggleKeep(isActive); // execute parent callback with new keep status
+        setKeep(isActive); // update state keep status
       }
     },
-    [active, ignored]
+    [keep, ignore]
   );
 
+  // toggle add genre to ignore list
   const handleRightClick = useCallback(
     (title: string, isIgnored: boolean) => {
-      if (active) {
-        onPress(!isIgnored);
+      // if album is currently being kept:
+      if (keep) {
+        onToggleKeep(!isIgnored); // execute parent callback with reverse of ignore status
       }
-      onIgnore(title, isIgnored);
-      setIgnored(isIgnored);
+      onToggleIgnore(title, isIgnored); // execute parent callback with new ignore status
+      setIgnore(isIgnored); // update state ignore status
     },
-    [active, ignored]
+    [keep, ignore]
   );
 
   return (
@@ -41,12 +46,12 @@ function GenreWidget(props: {
       <button
         className="selectable"
         type="button"
-        style={{ backgroundColor: ignored ? ' #ac0000' : active ? ' #008612' : ' #222222' }}
+        style={{ backgroundColor: ignore ? ' #ac0000' : keep ? ' #008612' : ' #222222' }}
         onClick={() => {
-          handleClick(!active);
+          handleClick(!keep);
         }}
         onContextMenu={() => {
-          handleRightClick(title, !ignored);
+          handleRightClick(title, !ignore);
         }}
       >
         <div className="textTwo">{title}</div>
