@@ -20,6 +20,20 @@ function HomeScreen({ onStart }) {
   const ipcHandleFiles = () => window.electron.ipcRenderer.send('open-file-browser');
   const ipcHandleStart = () => window.electron.ipcRenderer.send('start-scan');
 
+  const handleFolderSelect = useCallback((newFolder: string) => {
+    setSelectedFolder(newFolder);
+  }, []);
+
+  // begin folder scan
+  const handleStart = useCallback(() => {
+    if (selectedFolder !== '') {
+      onStart(); // execute parent callback
+      ipcHandleStart(); // send message to main thread
+    } else {
+      setFolderError(true); // folder name is empty, show error
+    }
+  }, []);
+
   // receive messages to main thread
   useEffect(() => {
     // when new folder is selected on main thread, update ui
@@ -28,20 +42,6 @@ function HomeScreen({ onStart }) {
       handleFolderSelect(input);
     });
   }, []);
-
-  const handleFolderSelect = useCallback((newFolder: string) => {
-    setSelectedFolder(newFolder);
-  }, []);
-
-  // begin folder scan
-  const handleStart = () => {
-    if (selectedFolder !== '') {
-      onStart(); // execute parent callback
-      ipcHandleStart(); // send message to main thread
-    } else {
-      setFolderError(true); // folder name is empty, show error
-    }
-  };
 
   return (
     <>

@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 import { electronAPI } from '@electron-toolkit/preload';
 
 const api = {
-  onReceiveData: (callback) => {
+  onReceiveAlbum: (callback) => {
     ipcRenderer.removeAllListeners('recv-album');
     ipcRenderer.once('recv-album', (_event, value) => callback(value));
   },
