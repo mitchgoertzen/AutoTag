@@ -1,4 +1,4 @@
-import Versions from './Versions';
+import Footer from './Footer';
 import { useCallback, useEffect, useState } from 'react';
 import React from 'react';
 
@@ -64,7 +64,7 @@ function Home({ onStart }) {
           <div>{folder !== '' ? folder : 'choose album folder'}</div>
         </a>
         {folderError && <div style={{ color: 'red', fontSize: 12 }}>no folder selected</div>}
-        <Versions />
+        <Footer />
       </div>
     </>
   );

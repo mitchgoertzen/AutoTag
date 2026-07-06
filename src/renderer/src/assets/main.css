@@ -269,7 +269,7 @@ code {
   color: var(--ev-c-gray-3);
 }
 
-.versions {
+.footer {
   position: absolute;
   bottom: 30px;
   margin: 0 auto;
@@ -282,7 +282,7 @@ code {
   backdrop-filter: blur(24px);
 }
 
-.versions li {
+.footer li {
   display: block;
   float: left;
   border-right: 1px solid var(--ev-c-gray-1);
@@ -321,7 +321,7 @@ code {
 }
 
 @media (max-width: 620px) {
-  .versions {
+  .footer {
     display: none;
   }
 }
