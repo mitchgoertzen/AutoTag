@@ -45,54 +45,53 @@ function AlbumsScreen({ onEnd }) {
   const ipcHandleIgnoreGenre = (selectedGenre: string, willIgnore: boolean) =>
     window.electron.ipcRenderer.send('ignore-genre', { genre: selectedGenre, ignore: willIgnore });
 
-  const handleSave = useCallback(() => {
-    setSaving(true);
-    ipcHandleSave();
-  }, []);
-
   const handleQuit = () => {
     ipcHandleQuit();
     onEnd();
   };
 
-  const updateData = useCallback(
-    (newData: any) => {
-      let genreArray = [];
-      const currentData: any[] = [...scannedAlbums];
-      if (newData.genres) {
-        genreArray = newData.genres.split(',');
-      }
+  const handleSave = useCallback(() => {
+    setSaving(true);
+    ipcHandleSave();
+  }, []);
 
+  const updateAlbums = useCallback(
+    (album: any) => {
+      const currentAlbums: any[] = [...scannedAlbums];
+      let genreArray = [];
+      if (album.genres) {
+        genreArray = album.genres.split(',');
+      }
+      //create id has for album
+      const id = generateHash(album.title);
+      // remove any whitespace from start of genre title
       const formattedArray = genreArray.map((item) => (item[0] === ' ' ? ltrim(item) : item));
-      const id = generateHash(newData.album);
-      currentData.push({ id: id, album: newData.album, genres: formattedArray });
+      currentAlbums.push({ id: id, title: album.title, genres: formattedArray });
       ipcHandleUpdateGenres({ album: id, genres: new Set(formattedArray) });
-      setScannedAlbums(currentData);
+      setScannedAlbums(currentAlbums);
     },
     [scannedAlbums, setScannedAlbums]
   );
 
   useEffect(() => {
-    window.api.onSaveComplete((input: any) => {
-      console.log('ui', input);
-      setSaving(false);
-    });
-  }, []);
-
-  useEffect(() => {
-    window.api.onReceiveData((input: any) => {
-      updateData(input);
-    });
-  }, [updateData]);
-
-  useEffect(() => {
     window.api.onScanComplete(() => {
-      console.log('scan complete');
       setScanComplete(true);
     });
   }, []);
 
-  const renderGenres = useCallback((genres: string[], albumID) => {
+  useEffect(() => {
+    window.api.onReceiveAlbum((input: any) => {
+      updateAlbums(input);
+    });
+  }, [updateAlbums]);
+
+  useEffect(() => {
+    window.api.onSaveComplete(() => {
+      setSaving(false);
+    });
+  }, []);
+
+  const renderGenres = useCallback((genres: string[], albumID: number) => {
     return genres.map((currGenre) => (
       <div key={currGenre}>
         <GenreWidget
@@ -108,12 +107,12 @@ function AlbumsScreen({ onEnd }) {
     ));
   }, []);
 
-  const renderList = useCallback(() => {
-    return scannedAlbums.map(({ id, album, genres }) => (
+  const renderAlbums = useCallback(() => {
+    return scannedAlbums.map(({ id, title, genres }) => (
       <div key={id} className="listRow" style={{}}>
         <div
           className="textTwo"
-          key={album}
+          key={id}
           style={{
             alignContent: 'center',
             display: 'table-cell',
@@ -122,7 +121,7 @@ function AlbumsScreen({ onEnd }) {
             minWidth: '250px'
           }}
         >
-          {album}
+          {title}
         </div>
 
         <div
@@ -168,14 +167,11 @@ function AlbumsScreen({ onEnd }) {
               {scanComplete && 'select genres to keep, or right click to permanently ignore'}
             </div>
             <div className="list" style={{ display: 'table' }}>
-              {renderList()}
+              {renderAlbums()}
             </div>
           </div>
         </div>
       </div>
-
-      {/* <div>files saved!</div> */}
-
       <div className="action">
         <button type="button" disabled={saving || !scanComplete} onClick={handleSave}>
           Save
