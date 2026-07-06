@@ -34,7 +34,7 @@ function HomeScreen({ onStart }) {
     }
   }, [selectedFolder]);
 
-  // ** receive messages to main thread **
+  // ** receive messages from main thread **
 
   // when new folder is selected on main thread, update ui
   window.api.onFolderSelected((input: string) => {
