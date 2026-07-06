@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import Home from './components/Home';
-import Running from './components/Running';
+import HomeScreen from './components/Home';
+import AlbumsScreen from './components/Albums';
 import { useCallback } from 'react';
 import React from 'react';
 
@@ -11,13 +11,13 @@ function App() {
     let screen: any;
     screen =
       currentScreen === 'home' ? (
-        <Home
+        <HomeScreen
           onStart={() => {
             setCurrentScreen('running');
           }}
         />
       ) : (
-        <Running
+        <AlbumsScreen
           onEnd={() => {
             setCurrentScreen('home');
           }}
