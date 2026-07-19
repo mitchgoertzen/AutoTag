@@ -11,6 +11,7 @@ let currentAlbum = '';
 let currentArist = '';
 let currentGenres = '';
 let currentHash = -1;
+let rateYourMusicEnabled = false;
 
 let mainWindow: WebContents;
 
@@ -39,10 +40,11 @@ const pascalCase = (input: string): string => {
   return newString;
 };
 
-// load data from given last.fm link using cheerio
-async function loadWebpage(link: string) {
+async function readLastFm(albumInfo: string) {
   let genres: string[] = [];
-  const tags = await cheerio.fromURL(link).then(($) => {
+
+  const link = 'https://www.last.fm/music/' + albumInfo;
+  const data = await cheerio.fromURL(link).then(($) => {
     // select element where albums tags are stored
     const $data = $('.tags-list:first').find('li');
 
@@ -61,6 +63,52 @@ async function loadWebpage(link: string) {
     }
     return genres;
   });
+
+  return data;
+}
+
+async function readRateYourMusic(albumInfo: string) {
+  let genres: string[] = [];
+
+  // const link = 'https://rateyourmusic.com/release/' + 'album/' + albumInfo + '/';
+  const link = 'https://rateyourmusic.com/release/album/tame-impala/deadbeat/';
+  console.log(link);
+
+  const data = await cheerio.fromURL(link).then(($) => {
+    const $agenres = $('.tags-list:first').find('li');
+    // select element where albums tags are stored
+    const $data = $('.release_pri_genres:first').find('li');
+    console.log(data);
+    // select iterator at beginning of tags list
+    let $curr = $data.first();
+    // for (let i = 0; i < $data.length; i++) {
+    //   let genre = $curr.text();
+    //   var hasNumber = /\d/;
+    //   // if tag name is not a number AND is not in ignore list,
+    //   if (!hasNumber.test(genre) && !ignoredGenres.has(genre.replaceAll(' ', ''))) {
+    //     // convert to pascal case
+    //     genres.push(pascalCase(genre));
+    //   }
+    //   // continue iterating through tags
+    //   $curr = $curr.next();
+    // }
+    return genres;
+  });
+
+  return data;
+}
+
+// load data from given last.fm link using cheerio
+async function loadWebpage(lastFm: string, rym: string) {
+  let genres: string[] = [];
+
+  let tags;
+  if (rateYourMusicEnabled) {
+    tags = readRateYourMusic(rym);
+  } else {
+    tags = readLastFm(lastFm);
+  }
+
   return tags;
 }
 
@@ -81,7 +129,7 @@ function parseFolderName(folder: string) {
   currentAlbum = folder.slice(1).trim();
 }
 
-async function getGenres(link: string) {
+async function getGenres(lastFm: string, rym: string) {
   let result = false;
   let pass = false;
   let retryAttempts = 0;
@@ -89,12 +137,14 @@ async function getGenres(link: string) {
   while (true) {
     try {
       await loadWebpage(
-        link
+        lastFm,
+        rym
         //   , {
         //   lowerCaseTags: true,
         //   lowerCaseAttributeNames: true
         // }
       ).then((data) => {
+        console.log('data:', data);
         currentGenres = '';
         data.sort();
         for (let i = 0; i < data.length; i++) {
@@ -111,7 +161,8 @@ async function getGenres(link: string) {
       retryAttempts++;
       const newLink = e.input;
       if (newLink !== undefined) {
-        link = 'https://www.last.fm' + e.input;
+        console.log('e.input', e.input);
+        //lastFm =  e.input;
       } else {
         break;
       }
@@ -184,11 +235,17 @@ async function getFolders(filepath: string) {
       break;
     }
     parseFolderName(currFolder.name);
-    const artist = currentArist.replaceAll(' ', '+');
-    const album = currentAlbum.replaceAll(' ', '+');
-    const link = 'https://www.last.fm/music/' + artist + '/' + album;
+
+    let artist = currentArist.replaceAll(' ', '+');
+    let album = currentAlbum.replaceAll(' ', '+');
+    const lastFm = artist + '/' + album;
+
+    artist = artist.replaceAll('+', '-');
+    album = album.replaceAll('+', '-');
+    const rym = artist + '/' + album;
+
     currentHash = generateHash(currFolder.name);
-    const success = await getGenres(link).then((result) => {
+    const success = await getGenres(lastFm, rym.toLowerCase()).then((result) => {
       return result;
     });
     if (success) {
