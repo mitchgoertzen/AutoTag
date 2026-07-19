@@ -9,6 +9,10 @@ import path from 'path';
 
 import { fileURLToPath } from 'node:url';
 
+if (require('electron-squirrel-startup')) {
+  app.quit();
+}
+
 function createWindow() {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
