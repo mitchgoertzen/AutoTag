@@ -44,9 +44,9 @@ function GenreWidget(props: {
   return (
     <div key={title} className="genre">
       <button
-        className="selectable"
+        className={ignore ? 'selectableDisabled' : keep ? 'selectableActive' : 'selectableInactive'}
         type="button"
-        style={{ backgroundColor: ignore ? ' #ac0000' : keep ? ' #008612' : ' #222222' }}
+        //style={{ backgroundColor: ignore ? ' #ac0000' : keep ? ' #008612' : ' #222222' }}
         onClick={() => {
           handleClick(!keep);
         }}
@@ -54,7 +54,7 @@ function GenreWidget(props: {
           handleRightClick(title, !ignore);
         }}
       >
-        <div className="textTwo">{title}</div>
+        <div className="selectableText">{title}</div>
       </button>
     </div>
   );

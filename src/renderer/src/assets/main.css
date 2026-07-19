@@ -100,19 +100,66 @@ code {
   width: 90px;
   justify-self: center;
   vertical-align: middle;
-  background-color: var(--ev-c-black-soft);
   justify-content: center;
   text-align: center;
 }
 
-.selectable {
+.selectableActive {
+  border-width: 0;
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  background-color: black;
-}
-.selectable:active {
   background-color: var(--ev-c-green-1);
+}
+
+.selectableActive:hover {
+  background-color: var(--ev-c-green-2);
+}
+
+.selectableActive .selectableText {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  justify-content: center;
+}
+
+.selectableInactive {
+  border-width: 0;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  background-color: var(--ev-c-black-soft);
+}
+
+.selectableInactive:hover {
+  background-color: var(--ev-c-black-mute);
+}
+
+.selectableInactive .selectableText {
+  font-size: 11px;
+  font-weight: 100;
+  text-align: center;
+  justify-content: center;
+  color: var(--ev-c-white-transparent);
+}
+
+.selectableDisabled {
+  border-width: 0;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  background-color: var(--ev-c-red-1);
+}
+
+.selectableDisabled .selectableText {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  justify-content: center;
+}
+
+.selectableDisabled:hover {
+  background-color: var(--ev-c-red-2);
 }
 
 .box {
