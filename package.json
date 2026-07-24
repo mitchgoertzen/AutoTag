@@ -1,5 +1,5 @@
 {
-  "name": "autotag",
+  "name": "genrescanner",
   "version": "0.2.0",
   "description": "An application for updating genre tags on music files",
   "main": "./dist/main/index.js",
@@ -40,6 +40,7 @@
     "@types/electron-squirrel-startup": "^1.0.2",
     "@types/react": "^19.2.17",
     "@vitejs/plugin-react": "^5.1.1",
+    "dotenv-cli": "^11.0.0",
     "electron": "^39.2.6",
     "electron-vite": "^5.0.0",
     "eslint": "^9.39.1",
