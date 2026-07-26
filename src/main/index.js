@@ -16,8 +16,8 @@ if (require('electron-squirrel-startup')) {
 function createWindow() {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 1000,
+    height: 744,
     minHeight: 335,
     minWidth: 450,
     show: false,
@@ -105,6 +105,8 @@ app.whenReady().then(() => {
         isDialogOpen = false;
         if (!response.canceled) {
           folderPath = response.filePaths[0] + '\\';
+
+          //TODO: check if folder is empty
           window.webContents.send('folder-select', folderPath);
         }
       });
