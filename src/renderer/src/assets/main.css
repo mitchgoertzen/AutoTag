@@ -34,6 +34,31 @@ code {
   justify-content: center;
   flex-direction: column;
   width: 100%;
+  height: 100%;
+}
+
+.scan {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.container {
+  position: relative;
+  flex: 1;
+}
+
+.box {
+  display: flex;
+  background-color: black;
+  width: 90vw;
+  height: 65vh;
+  border: solid 1px var(--ev-c-green-1);
+  margin-top: 20px;
+  margin-bottom: 20px;
+  min-width: 400px;
+  overflow-y: auto;
+  overflow-x: auto;
 }
 
 .info-footer {
@@ -162,19 +187,6 @@ code {
   background-color: var(--ev-c-red-2);
 }
 
-.box {
-  display: flex;
-  background-color: black;
-  width: 80vw;
-  height: 50vh;
-  border: solid 1px var(--ev-c-green-1);
-  margin-top: 20px;
-  margin-bottom: 20px;
-  min-width: 400px;
-  overflow-y: auto;
-  overflow-x: auto;
-}
-
 .folder {
   border-color: var(--ev-c-white-mute);
   border-style: dashed;
@@ -209,12 +221,6 @@ code {
   line-height: 24px;
   color: var(--ev-c-text-2);
   font-weight: 600;
-}
-.scan {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
 }
 
 .react {
@@ -388,12 +394,6 @@ code {
   justify-content: center;
   align-items: center;
 }
-
-.container {
-  position: relative;
-  flex: 1;
-}
-
 .item2 {
   border: solid 1px var(--ev-c-green-1);
   width: 80vw;
