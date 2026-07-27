@@ -69,7 +69,7 @@ app.whenReady().then(() => {
   let folderPaths = [];
   let folderPath = '';
   let isDialogOpen = false;
-  let selectDirectory = false;
+  let selectDirectory = true;
 
   const updateGenreMap = (add, id, genre) => {
     const albumGenres = genreMap.get(id);
@@ -109,10 +109,9 @@ app.whenReady().then(() => {
         })
         .then((response) => {
           isDialogOpen = false;
-          console.log('folders length:', response.length);
+          console.log('folders length:', response.filePaths.length);
           if (!response.canceled) {
-            console.log('response:', response);
-            folderPath = response.filePaths[0] + '\\';
+            folderPath = response.filePaths;
 
             //TODO: check if folder is empty
             window.webContents.send('folder-select', folderPath);
@@ -152,6 +151,7 @@ app.whenReady().then(() => {
     if (folderPath !== '') {
       run(window.webContents, folderPath, app.getPath('userData')).then((response) => {
         window.webContents.send('scan-complete', 'scan complete!');
+        console.log('scan response', response);
         folderPaths = response;
       });
     } else {

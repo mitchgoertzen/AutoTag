@@ -22,7 +22,7 @@ let ignoredGenres = new Set();
 const count = 9999;
 let index = 0;
 
-const folderLimit = 5;
+const folderLimit = 50;
 const maxRetryAttempts = 5;
 
 const generateHash = (input: string): number => {
@@ -188,15 +188,23 @@ async function run(window: WebContents, filePath: string, userDataPath: string) 
   mainWindow = window;
 
   ignoredGenres = new Set(loadJsonFile(userDataPath));
-
+  let paths = [];
   try {
-    return await getFolders(filePath);
+    for (let i = 0; i < filePath.length; i++) {
+      const currentFolder = await getFolders(filePath[i]);
+      console.log('curretnfolder:', currentFolder);
+      //TODO: fix with ts
+      paths = currentFolder!!.concat(paths);
+    }
+    return paths;
   } catch (e) {
     console.error('e', e);
   }
 }
 
 async function getFolders(filepath: string) {
+  filepath = filepath + '\\';
+  console.log('getfolder filepath', filepath);
   const dir = await fs.promises.readdir(filepath, { withFileTypes: true });
   const folders = dir.filter((item) => !/(^|\/)\.[^\/\.]/g.test(item.name));
   const numFolders = folders.length;

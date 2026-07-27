@@ -14,40 +14,54 @@ declare global {
 }
 
 function HomeScreen({ onStart }) {
-  const [selectedFolder, setSelectedFolder] = useState(''); // root folder where albums are stored
+  const [selectedFolders, setSelectedFolders] = useState([]); // root folder where albums are stored
   const [folderError, setFolderError] = useState(false); // error status of selected folder (ie. nothing selected)
   const [selectDirectory, setSelectDirectory] = useState(false); // error status of selected folder (ie. nothing selected)
+  const [showSelectedFolders, setShowSelectedFolders] = useState(false); // error status of selected folder (ie. nothing selected)
 
   // send messages to main thread
   const ipcHandleFiles = () => window.electron.ipcRenderer.send('open-file-browser');
   const ipcHandleStart = () => window.electron.ipcRenderer.send('start-scan');
 
-  const handleFolderSelect = useCallback((newFolder: string) => {
-    setSelectedFolder(newFolder);
+  const handleFolderSelect = useCallback((newFolder: string[]) => {
+    setSelectedFolders(newFolder);
   }, []);
 
   // begin folder scan
   const handleStart = useCallback(() => {
-    if (selectedFolder !== '') {
-      console.log('selected folder:', selectedFolder);
-      // onStart(); // execute parent callback
-      // ipcHandleStart(); // send message to main thread
+    if (selectedFolders.length > 0) {
+      console.log('selected folders:', selectedFolders);
+      onStart(); // execute parent callback
+      ipcHandleStart(); // send message to main thread
     } else {
       setFolderError(true); // folder name is empty, show error
     }
-  }, [selectedFolder]);
+  }, [selectedFolders]);
 
   const handleChange = (checked) => {
     setSelectDirectory(checked);
   };
 
+  const toggleShowFolders = (value) => {
+    setShowSelectedFolders(value);
+  };
+
   // ** receive messages from main thread **
 
   // when new folder is selected on main thread, update ui
-  window.api.onFolderSelected((input: string) => {
+  window.api.onFolderSelected((input: string[]) => {
     setFolderError(false);
     handleFolderSelect(input);
   });
+
+  const renderSelectedFolders = useCallback(() => {
+    console.log('selectedFolders', selectedFolders.length);
+    return selectedFolders.map((folder) => (
+      <div key={folder} style={{ fontSize: '14px' }}>
+        {folder}
+      </div>
+    ));
+  }, [selectedFolders]);
 
   return (
     <>
@@ -55,43 +69,65 @@ function HomeScreen({ onStart }) {
         style={{
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center'
+          height: '100vh',
+          justifyContent: 'space-around',
+          alignContent: 'center'
         }}
       >
-        <div className="text">
-          update your album <span className="react">genres</span>
-        </div>
-        <div className="actions">
-          <div className="action">
-            <a key={'startScan'} target="_blank" rel="noreferrer" onClick={handleStart}>
-              start scan
-            </a>
+        <div
+          style={{
+            flex: 0.5,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'end',
+            alignItems: 'center'
+          }}
+        >
+          <div className="text">
+            update your album <span className="react">genres</span>
           </div>
-        </div>
-        <a className="folder" target="_blank" rel="noreferrer" onClick={ipcHandleFiles}>
-          <div
-            style={{
-              height: '30px',
-              alignSelf: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <img src={icon} className="icon" />
+          <div className="actions">
+            <div className="action">
+              <a
+                key={'startScan'}
+                target="_blank"
+                rel="noreferrer"
+                onClick={handleStart}
+                style={{ fontSize: 16 }}
+              >
+                start scan
+              </a>
+            </div>
           </div>
-          <div
-            style={{
-              alignSelf: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            {selectedFolder !== '' ? selectedFolder : 'choose album folders'}
-          </div>
-        </a>
+          <a className="folder" target="_blank" rel="noreferrer" onClick={ipcHandleFiles}>
+            <div
+              style={{
+                height: '30px',
+                alignSelf: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <img src={icon} className="icon" />
+            </div>
+            <div
+              style={{
+                alignSelf: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <div style={{ fontSize: 16 }}>
+                {selectedFolders.length == 0
+                  ? 'choose album folders'
+                  : selectedFolders.length == 1
+                    ? selectedFolders
+                    : 'multiple folders selected'}
+              </div>
+            </div>
+          </a>
 
-        {folderError && <div style={{ color: 'red', fontSize: 12 }}>no folder selected</div>}
+          {folderError && <div style={{ color: 'red', fontSize: 12 }}>no folder selected</div>}
 
-        {/* <label>
+          {/* <label>
           <span>select files</span>
           <Switch
             onChange={handleChange}
@@ -109,8 +145,56 @@ function HomeScreen({ onStart }) {
           />
           <span>select folders</span>
         </label> */}
+        </div>
 
-        <Footer />
+        <div
+          style={{
+            flex: 0.4,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            minWidth: '300px'
+          }}
+        >
+          {selectedFolders.length > 1 && (
+            <a
+              onClick={() => {
+                toggleShowFolders(!showSelectedFolders);
+              }}
+              style={{
+                fontSize: 12,
+                color: '#00bb10',
+                fontWeight: 500,
+                marginTop: '10px',
+                justifySelf: 'center',
+                display: 'flex'
+              }}
+            >
+              {showSelectedFolders ? 'hide folders' : 'show folders'}
+            </a>
+          )}
+
+          {showSelectedFolders && (
+            <div
+              style={{
+                padding: '10px',
+                marginTop: '5px',
+                height: '20vh',
+                width: '45vw',
+                minWidth: '400px',
+                backgroundColor: 'black',
+                border: 'solid 0.5px #008612',
+                overflow: 'auto'
+              }}
+            >
+              {renderSelectedFolders()}
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', flex: 0.1, justifyContent: 'flex-end' }}>
+          <Footer />
+        </div>
       </div>
     </>
   );
