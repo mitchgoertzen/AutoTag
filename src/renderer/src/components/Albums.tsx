@@ -12,6 +12,7 @@ declare global {
 
 function AlbumsScreen({ onEnd }) {
   const [scanComplete, setScanComplete] = useState<boolean>(false); // status of genre check for all albums
+  const [saveEnabled, setSaveEnabled] = useState<boolean>(false); // save button will only be enabled if at least 1 folder has been scanned
   const [saving, setSaving] = useState<boolean>(false); // saving genres to song files in progress
   const [scannedAlbums, setScannedAlbums] = useState<any>([]); // currently scanned albums
 
@@ -51,12 +52,16 @@ function AlbumsScreen({ onEnd }) {
   };
 
   const handleSave = useCallback(() => {
+    console.log('scannedAlbums size', scannedAlbums.length);
+
     setSaving(true);
     ipcHandleSave();
-  }, []);
+  }, [scannedAlbums]);
 
   const updateAlbums = useCallback(
     (album: any) => {
+      console.log('update albums');
+      console.log('scannedAlbums size', scannedAlbums.length);
       const currentAlbums: any[] = [...scannedAlbums];
       let genreArray = [];
       if (album.genres) {
@@ -68,9 +73,12 @@ function AlbumsScreen({ onEnd }) {
       const formattedArray = genreArray.map((item) => (item[0] === ' ' ? ltrim(item) : item));
       currentAlbums.push({ id: id, title: album.title, genres: formattedArray });
       ipcHandleUpdateGenres({ album: id, genres: new Set(formattedArray) });
+      if (!saveEnabled) {
+        setSaveEnabled(true);
+      }
       setScannedAlbums(currentAlbums);
     },
-    [scannedAlbums, setScannedAlbums]
+    [saveEnabled, scannedAlbums, setSaveEnabled, setScannedAlbums]
   );
 
   useEffect(() => {
@@ -149,7 +157,7 @@ function AlbumsScreen({ onEnd }) {
 
       <div className="container">
         {saving && (
-          <div className="item2">
+          <div className="save-overlay">
             <div className="loader" />
             <div>saving </div>
           </div>
@@ -173,7 +181,11 @@ function AlbumsScreen({ onEnd }) {
         </div>
       </div>
       <div className="action">
-        <button type="button" disabled={saving || !scanComplete} onClick={handleSave}>
+        <button
+          type="button"
+          disabled={!saveEnabled || saving || !scanComplete}
+          onClick={handleSave}
+        >
           Save
         </button>
       </div>
