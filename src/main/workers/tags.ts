@@ -42,8 +42,16 @@ const pascalCase = (input: string): string => {
 // load data from given last.fm link using cheerio
 async function loadWebpage(link: string) {
   let genres: string[] = [];
-  const tags = await cheerio.fromURL(link).then(($) => {
-    // select element where albums tags are stored
+
+  try {
+    const response = await fetch(link);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const data = await response.text();
+    const $ = cheerio.load(data);
     const $data = $('.tags-list:first').find('li');
 
     // select iterator at beginning of tags list
@@ -59,9 +67,30 @@ async function loadWebpage(link: string) {
       // continue iterating through tags
       $curr = $curr.next();
     }
-    return genres;
-  });
-  return tags;
+  } catch (error) {
+    console.error('Fetch failed:', error);
+  }
+
+  // const tags = await cheerio.fromURL(link).then(($) => {
+  //   // select element where albums tags are stored
+  //   const $data = $('.tags-list:first').find('li');
+
+  //   // select iterator at beginning of tags list
+  //   let $curr = $data.first();
+  //   for (let i = 0; i < $data.length; i++) {
+  //     let genre = $curr.text();
+  //     var hasNumber = /\d/;
+  //     // if tag name is not a number AND is not in ignore list,
+  //     if (!hasNumber.test(genre) && !ignoredGenres.has(genre.replaceAll(' ', ''))) {
+  //       // convert to pascal case
+  //       genres.push(pascalCase(genre));
+  //     }
+  //     // continue iterating through tags
+  //     $curr = $curr.next();
+  //   }
+  //   return genres;
+  // });
+  return genres;
 }
 
 //TODO: if more than one hyphen exists, save all version of artist - artist (eg. Dinosaur Pile-Up - albumname)
@@ -79,15 +108,19 @@ function parseFolderName(folder: string) {
 
   currentArist = artist.trim();
   currentAlbum = folder.slice(1).trim();
+  console.log('album:', currentAlbum);
 }
 
 async function getGenres(link: string) {
   let result = false;
   let pass = false;
   let retryAttempts = 0;
+  let error = '';
 
   while (true) {
+    console.log('loop');
     try {
+      console.log('loading...', link);
       await loadWebpage(
         link
         //   , {
@@ -109,15 +142,29 @@ async function getGenres(link: string) {
       });
     } catch (e) {
       retryAttempts++;
+      pass = false;
+      error = e;
+      // console.log('error', e);
       const newLink = e.input;
+      console.log('newLink', newLink);
       if (newLink !== undefined) {
+        console.log('not undefined');
         link = 'https://www.last.fm' + e.input;
-      } else {
-        break;
+        console.log('link = https://www.last.fm' + e.input);
       }
+      // else {
+      //   break;
+      // }
     }
 
-    if (pass || retryAttempts > 1) {
+    console.log('pass', pass);
+    console.log('retryAttempts', retryAttempts);
+    if (pass || retryAttempts > 5) {
+      if (!pass) {
+        console.log('fail with error', error);
+      } else {
+        console.log('pass');
+      }
       break;
     }
   }
@@ -180,6 +227,7 @@ async function getFolders(filepath: string) {
     const currFolder = folders[i];
     folderPaths.push({ path: filepath, album: currFolder.name });
 
+    console.log('scanning', currFolder.name);
     if (index++ === count) {
       break;
     }
@@ -189,6 +237,7 @@ async function getFolders(filepath: string) {
     const link = 'https://www.last.fm/music/' + artist + '/' + album;
     currentHash = generateHash(currFolder.name);
     const success = await getGenres(link).then((result) => {
+      console.log('genres loaded');
       return result;
     });
     if (success) {
@@ -201,6 +250,8 @@ async function getFolders(filepath: string) {
       } else {
         mainWindow.send('recv-album', { title: currFolder.name, genres: currentGenres });
       }
+    } else {
+      console.log('could not load', currFolder.name);
     }
   }
 
