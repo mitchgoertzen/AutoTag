@@ -69,6 +69,7 @@ app.whenReady().then(() => {
   let folderPaths = [];
   let folderPath = '';
   let isDialogOpen = false;
+  let selectDirectory = false;
 
   const updateGenreMap = (add, id, genre) => {
     const albumGenres = genreMap.get(id);
@@ -101,15 +102,22 @@ app.whenReady().then(() => {
   ipcMain.on('open-file-browser', () => {
     if (!isDialogOpen) {
       isDialogOpen = true;
-      dialog.showOpenDialog({ properties: ['openDirectory'] }).then((response) => {
-        isDialogOpen = false;
-        if (!response.canceled) {
-          folderPath = response.filePaths[0] + '\\';
+      dialog
+        .showOpenDialog({
+          properties: selectDirectory ? ['openDirectory', 'multiSelections'] : ['multiSelections'],
+          filters: [{ name: 'Music', extensions: ['mp3', 'wav', 'm4a', 'flac', '.aac'] }]
+        })
+        .then((response) => {
+          isDialogOpen = false;
+          console.log('folders length:', response.length);
+          if (!response.canceled) {
+            console.log('response:', response);
+            folderPath = response.filePaths[0] + '\\';
 
-          //TODO: check if folder is empty
-          window.webContents.send('folder-select', folderPath);
-        }
-      });
+            //TODO: check if folder is empty
+            window.webContents.send('folder-select', folderPath);
+          }
+        });
     }
   });
 

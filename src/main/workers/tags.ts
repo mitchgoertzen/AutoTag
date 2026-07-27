@@ -11,7 +11,6 @@ let currentAlbum = '';
 let currentArist = '';
 let currentGenres = '';
 let currentHash = -1;
-
 let mainWindow: WebContents;
 
 let EXIT_FLAG = false;
@@ -22,6 +21,9 @@ let ignoredGenres = new Set();
 
 const count = 9999;
 let index = 0;
+
+const folderLimit = 5;
+const maxRetryAttempts = 5;
 
 const generateHash = (input: string): number => {
   let hash = 0;
@@ -139,7 +141,7 @@ async function getGenres(link: string) {
 
     console.log('pass', pass);
     console.log('retryAttempts', retryAttempts);
-    if (pass || retryAttempts > 5) {
+    if (pass || retryAttempts > maxRetryAttempts) {
       if (!pass) {
         console.log('fail with error', error);
       } else {
@@ -203,7 +205,7 @@ async function getFolders(filepath: string) {
   const folderPaths: any[] = [];
 
   //TODO: deal with folders insde album (ie: disc 1 disc 2)
-  for (let i = 0; i < numFolders; i++) {
+  for (let i = 0; i < numFolders && i < folderLimit; i++) {
     const currFolder = folders[i];
     folderPaths.push({ path: filepath, album: currFolder.name });
 

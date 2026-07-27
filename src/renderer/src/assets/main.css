@@ -364,6 +364,10 @@ code {
   }
 }
 
+.react-switch {
+  vertical-align: middle;
+}
+
 /* Scrollbar styles */
 ::-webkit-scrollbar {
   width: 4px;

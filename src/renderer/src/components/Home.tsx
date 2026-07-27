@@ -1,6 +1,7 @@
 import Footer from './Footer';
 import { useCallback, useEffect, useState } from 'react';
 import React from 'react';
+import Switch from 'react-switch';
 
 //@ts-ignore
 import icon from './../../../../resources/folder.png?asset';
@@ -15,6 +16,7 @@ declare global {
 function HomeScreen({ onStart }) {
   const [selectedFolder, setSelectedFolder] = useState(''); // root folder where albums are stored
   const [folderError, setFolderError] = useState(false); // error status of selected folder (ie. nothing selected)
+  const [selectDirectory, setSelectDirectory] = useState(false); // error status of selected folder (ie. nothing selected)
 
   // send messages to main thread
   const ipcHandleFiles = () => window.electron.ipcRenderer.send('open-file-browser');
@@ -27,12 +29,17 @@ function HomeScreen({ onStart }) {
   // begin folder scan
   const handleStart = useCallback(() => {
     if (selectedFolder !== '') {
-      onStart(); // execute parent callback
-      ipcHandleStart(); // send message to main thread
+      console.log('selected folder:', selectedFolder);
+      // onStart(); // execute parent callback
+      // ipcHandleStart(); // send message to main thread
     } else {
       setFolderError(true); // folder name is empty, show error
     }
   }, [selectedFolder]);
+
+  const handleChange = (checked) => {
+    setSelectDirectory(checked);
+  };
 
   // ** receive messages from main thread **
 
@@ -53,12 +60,12 @@ function HomeScreen({ onStart }) {
         }}
       >
         <div className="text">
-          update your album genre <span className="react">tags</span>
+          update your album <span className="react">genres</span>
         </div>
         <div className="actions">
           <div className="action">
             <a key={'startScan'} target="_blank" rel="noreferrer" onClick={handleStart}>
-              scan files
+              start scan
             </a>
           </div>
         </div>
@@ -78,10 +85,31 @@ function HomeScreen({ onStart }) {
               justifyContent: 'center'
             }}
           >
-            {selectedFolder !== '' ? selectedFolder : 'choose album folder'}
+            {selectedFolder !== '' ? selectedFolder : 'choose album folders'}
           </div>
         </a>
+
         {folderError && <div style={{ color: 'red', fontSize: 12 }}>no folder selected</div>}
+
+        {/* <label>
+          <span>select files</span>
+          <Switch
+            onChange={handleChange}
+            checked={selectDirectory}
+            onColor="#86d3ff"
+            onHandleColor="#2693e6"
+            handleDiameter={30}
+            uncheckedIcon={false}
+            checkedIcon={false}
+            boxShadow="0px 1px 5px rgba(0, 0, 0, 0.6)"
+            activeBoxShadow="0px 0px 1px 10px rgba(0, 0, 0, 0.2)"
+            height={20}
+            width={48}
+            className="react-switch"
+          />
+          <span>select folders</span>
+        </label> */}
+
         <Footer />
       </div>
     </>
