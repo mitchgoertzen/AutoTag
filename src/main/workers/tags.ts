@@ -70,26 +70,6 @@ async function loadWebpage(link: string) {
   } catch (error) {
     console.error('Fetch failed:', error);
   }
-
-  // const tags = await cheerio.fromURL(link).then(($) => {
-  //   // select element where albums tags are stored
-  //   const $data = $('.tags-list:first').find('li');
-
-  //   // select iterator at beginning of tags list
-  //   let $curr = $data.first();
-  //   for (let i = 0; i < $data.length; i++) {
-  //     let genre = $curr.text();
-  //     var hasNumber = /\d/;
-  //     // if tag name is not a number AND is not in ignore list,
-  //     if (!hasNumber.test(genre) && !ignoredGenres.has(genre.replaceAll(' ', ''))) {
-  //       // convert to pascal case
-  //       genres.push(pascalCase(genre));
-  //     }
-  //     // continue iterating through tags
-  //     $curr = $curr.next();
-  //   }
-  //   return genres;
-  // });
   return genres;
 }
 
